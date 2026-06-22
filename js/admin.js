@@ -150,6 +150,7 @@ function openEdit(r) {
   }, 0);
 
   currentTags = [...(r.tags || [])];
+  autoTags = [];  // при редактировании авто-теги пересчитаем заново при blur
   renderTagChips();
   updatePreview();
 
@@ -263,6 +264,7 @@ function clearForm() {
   document.getElementById('image-preview').classList.add('hidden');
   document.getElementById('parsed-tags-preview').innerHTML = '';
   currentTags = [];
+  autoTags = [];
   renderTagChips();
   updatePreview();
 }
@@ -406,23 +408,56 @@ function renderSavedTags() {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  INGREDIENTS AUTO-PARSE
+//  Срабатывает только когда пользователь ушёл с поля (blur),
+//  а не на каждый введённый символ.
+//  Отслеживаем какие теги были авто-добавлены, чтобы при изменении
+//  ингредиентов убирать старые авто-теги и добавлять новые.
 // ═══════════════════════════════════════════════════════════════════════
-document.getElementById('f-ingredients').addEventListener('input', onIngredientsChange);
+let autoTags = []; // теги добавленные автоматически из ингредиентов
+
+document.getElementById('f-ingredients').addEventListener('blur', onIngredientsChange);
+// Обновляем только превью-подсказку при вводе, но теги не трогаем
+document.getElementById('f-ingredients').addEventListener('input', updateIngredientPreview);
+
+function updateIngredientPreview() {
+  const lines  = document.getElementById('f-ingredients').value.split('\n').map(l => l.trim()).filter(Boolean);
+  // показываем только полные строки (где есть разделитель или конец строки)
+  const parsed = lines
+    .map(line => {
+      const first = line.split(/[—\-–:,]/)[0].trim().toLowerCase();
+      return first.length >= 2 ? first : null; // минимум 2 символа
+    })
+    .filter(Boolean);
+
+  const preview = document.getElementById('parsed-tags-preview');
+  preview.innerHTML = parsed.length
+    ? '→ авто-теги при уходе с поля: ' + parsed.map(t => `<span class="auto-tag">${t}</span>`).join(' ')
+    : '';
+}
 
 function onIngredientsChange() {
   const lines  = document.getElementById('f-ingredients').value.split('\n').map(l => l.trim()).filter(Boolean);
   const parsed = lines
-    .map(line => line.split(/[\s—\-–:,]/)[0].trim().toLowerCase())
+    .map(line => {
+      const first = line.split(/[—\-–:,]/)[0].trim().toLowerCase();
+      return first.length >= 2 ? first : null;
+    })
     .filter(Boolean);
 
-  const preview = document.getElementById('parsed-tags-preview');
-  if (parsed.length) {
-    preview.innerHTML = '→ авто-теги: ' + parsed.map(t => `<span class="auto-tag">${t}</span>`).join(' ');
-  } else {
-    preview.innerHTML = '';
-  }
+  // Убираем старые авто-теги которых больше нет в ингредиентах
+  currentTags = currentTags.filter(t => !autoTags.includes(t) || parsed.includes(t));
 
+  // Добавляем новые
   parsed.forEach(t => { if (!currentTags.includes(t)) currentTags.push(t); });
+
+  // Запоминаем текущий набор авто-тегов
+  autoTags = [...parsed];
+
+  const preview = document.getElementById('parsed-tags-preview');
+  preview.innerHTML = parsed.length
+    ? '→ авто-теги: ' + parsed.map(t => `<span class="auto-tag">${t}</span>`).join(' ')
+    : '';
+
   renderTagChips();
 }
 
