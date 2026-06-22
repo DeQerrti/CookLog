@@ -1,0 +1,445 @@
+/* ─── Токены ─────────────────────────────────────────── */
+:root {
+  --bg:          #1c1917;
+  --bg-card:     #262220;
+  --bg-card-hover: #2e2a26;
+  --bg-chip:     #312c28;
+  --bg-modal:    #201e1b;
+
+  --accent:      #c4866a;   /* терракот — уютный, домашний */
+  --accent-dim:  #8f5a42;
+  --green:       #7a9e6e;   /* Animal Crossing sage */
+  --green-dim:   #4e6645;
+
+  --text:        #f0e6d8;
+  --text-muted:  #a89880;
+  --text-dim:    #6e5e50;
+
+  --border:      #352f2a;
+  --shadow:      0 4px 24px rgba(0,0,0,.45);
+
+  --radius-card: 14px;
+  --radius-chip: 20px;
+  --radius-tag:  6px;
+
+  --font-display: 'Lora', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+}
+
+/* ─── Сброс ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+
+.hidden { display: none !important; }
+
+/* ─── Шапка ──────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(28, 25, 23, 0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon { font-size: 22px; }
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .02em;
+}
+
+.header-nav { display: flex; align-items: center; gap: 20px; }
+
+.nav-link {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: color .2s;
+}
+
+.nav-link:hover, .nav-link.active { color: var(--text); }
+
+.nav-admin {
+  background: var(--accent);
+  color: #1c1917 !important;
+  padding: 6px 16px;
+  border-radius: var(--radius-chip);
+  font-weight: 500;
+  transition: background .2s !important;
+}
+
+.nav-admin:hover { background: #d4967a !important; }
+
+/* ─── Основной блок ──────────────────────────────────── */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ─── Фильтры ────────────────────────────────────────── */
+.filters-section {
+  margin-bottom: 36px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.filter-group { display: flex; flex-direction: column; gap: 8px; }
+.filter-search { flex: 1; min-width: 220px; }
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+}
+
+.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  background: var(--bg-chip);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  padding: 5px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .18s;
+  font-family: var(--font-body);
+}
+
+.chip:hover { border-color: var(--accent); color: var(--text); }
+
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1c1917;
+  font-weight: 500;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  padding: 7px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .18s;
+}
+
+.search-input::placeholder { color: var(--text-dim); }
+.search-input:focus { border-color: var(--accent); }
+
+/* ─── Сетка карточек ─────────────────────────────────── */
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ─── Карточка рецепта ───────────────────────────────── */
+.recipe-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.recipe-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-dim);
+  box-shadow: var(--shadow);
+}
+
+.card-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.card-image-placeholder {
+  width: 100%;
+  height: 180px;
+  background: #2e2a26;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+.card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-meal {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: var(--radius-tag);
+  background: var(--green-dim);
+  color: #c8e8bc;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.badge-method {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: var(--radius-tag);
+  background: #3a2e28;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+}
+
+.badge-time {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-tag);
+  padding: 2px 8px;
+}
+
+/* ─── Пустое состояние ───────────────────────────────── */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 64px 0;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-icon { font-size: 40px; }
+
+/* ─── Модальное окно ─────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 48px rgba(0,0,0,.6);
+}
+
+.modal-close {
+  position: sticky;
+  top: 16px;
+  float: right;
+  margin: 16px 16px 0 0;
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all .18s;
+}
+
+.modal-close:hover { background: var(--accent); color: #1c1917; border-color: var(--accent); }
+
+.modal-content { padding: 24px 28px 32px; }
+
+.modal-image {
+  width: calc(100% + 56px);
+  margin: -24px -28px 24px;
+  height: 260px;
+  object-fit: cover;
+  display: block;
+  border-radius: 18px 18px 0 0;
+}
+
+.modal-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 16px;
+}
+
+.modal-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  margin-top: 24px;
+}
+
+.ingredients-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ingredients-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.ingredients-list li::before {
+  content: '—';
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.modal-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-chip);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; padding-top: 3px; }
+
+.modal-source {
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: var(--bg-chip);
+  border-radius: var(--radius-tag);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.modal-source a { color: var(--accent); text-decoration: none; }
+.modal-source a:hover { text-decoration: underline; }
+
+.modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+
+/* ─── Адаптив ────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .main { padding: 20px 16px 48px; }
+  .header-inner { padding: 0 16px; }
+  .filters-section { padding: 16px; }
+  .filters-row { flex-direction: column; }
+  .recipes-grid { grid-template-columns: 1fr; }
+  .modal-content { padding: 20px; }
+  .modal-image { width: calc(100% + 40px); margin: -20px -20px 20px; }
+}
