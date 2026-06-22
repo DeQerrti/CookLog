@@ -278,6 +278,14 @@ body {
 }
 
 /* ─── Пустое состояние ───────────────────────────────── */
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 64px 0;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
