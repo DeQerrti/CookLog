@@ -1,86 +1,63 @@
-const MEAL_LABELS = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус'
-};
-
-const METHOD_LABELS = {
-  fry: 'Жарка',
-  boil: 'Варка',
-  bake: 'Запекание',
-  raw: 'Без готовки'
-};
-
-// ─── Состояние ────────────────────────────────────────────────────────────────
-const filters = { meal: '', method: '', search: '' };
+// ─── State ────────────────────────────────────────────────────────────
+const filters  = { type: '', method: '', search: '' };
 let allRecipes = [];
 
-// ─── Загрузка из Supabase ─────────────────────────────────────────────────────
+// ─── Supabase load ────────────────────────────────────────────────────
 async function loadRecipes() {
   const grid = document.getElementById('recipes-grid');
-  grid.innerHTML = '<div class="loading">Загружаем рецепты...</div>';
+  grid.innerHTML = '<div class="loading">Загружаем рецепты…</div>';
 
   const { data, error } = await db.from('recipes').select('*').order('created_at', { ascending: false });
-
-  if (error) {
-    grid.innerHTML = '<div class="loading">Ошибка загрузки. Попробуй обновить страницу.</div>';
-    console.error(error);
-    return;
-  }
+  if (error) { grid.innerHTML = '<div class="loading">Ошибка загрузки. Обнови страницу.</div>'; return; }
 
   allRecipes = data || [];
+  buildDynamicFilters();
   applyFilters();
 }
 
-// ─── Рендер карточек ──────────────────────────────────────────────────────────
-function renderCards(recipes) {
-  const grid = document.getElementById('recipes-grid');
-  const empty = document.getElementById('empty-state');
-  grid.innerHTML = '';
+// ─── Dynamic filter chips from actual data ────────────────────────────
+function buildDynamicFilters() {
+  // collect unique values
+  const types   = [...new Set(allRecipes.map(r => r.type   || r.meal   || '').filter(Boolean))].sort();
+  const methods = [...new Set(allRecipes.map(r => r.method || '').filter(Boolean))].sort();
 
-  if (recipes.length === 0) {
-    empty.classList.remove('hidden');
-    return;
-  }
+  buildChips('type-chips',   'type',   types);
+  buildChips('method-chips', 'method', methods);
+}
 
-  empty.classList.add('hidden');
-
-  recipes.forEach(r => {
-    const card = document.createElement('div');
-    card.className = 'recipe-card';
-
-    const imageHtml = r.image_url
-      ? `<img class="card-image" src="${r.image_url}" alt="${r.title}" loading="lazy" />`
-      : `<div class="card-image-placeholder">${r.emoji || '🍽️'}</div>`;
-
-    const tagsHtml = (r.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
-    const timeLabel = r.time_minutes ? `⏱ ${r.time_minutes} мин` : '';
-
-    card.innerHTML = `
-      ${imageHtml}
-      <div class="card-body">
-        <div class="card-meta">
-          ${r.meal ? `<span class="badge-meal">${MEAL_LABELS[r.meal] || r.meal}</span>` : ''}
-          ${r.method ? `<span class="badge-method">${METHOD_LABELS[r.method] || r.method}</span>` : ''}
-          ${timeLabel ? `<span class="badge-time">${timeLabel}</span>` : ''}
-        </div>
-        <div class="card-title">${r.title}</div>
-        <div class="card-tags">${tagsHtml}</div>
-      </div>
-    `;
-
-    card.addEventListener('click', () => openModal(r));
-    grid.appendChild(card);
+function buildChips(containerId, filterKey, values) {
+  const el = document.getElementById(containerId);
+  // keep "Все" button, rebuild the rest
+  el.innerHTML = `<button class="chip active" data-filter="${filterKey}" data-value="">Все</button>`;
+  values.forEach(val => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.filter = filterKey;
+    btn.dataset.value  = val;
+    btn.textContent    = val;
+    el.appendChild(btn);
+  });
+  // re-attach listeners
+  el.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      filters[filterKey] = chip.dataset.value;
+      applyFilters();
+    });
   });
 }
 
-// ─── Фильтрация ───────────────────────────────────────────────────────────────
+// ─── Filter + render ──────────────────────────────────────────────────
 function applyFilters() {
   let result = [...allRecipes];
 
-  if (filters.meal) result = result.filter(r => r.meal === filters.meal);
-  if (filters.method) result = result.filter(r => r.method === filters.method);
+  if (filters.type) {
+    result = result.filter(r => (r.type || r.meal || '') === filters.type);
+  }
+  if (filters.method) {
+    result = result.filter(r => (r.method || '') === filters.method);
+  }
   if (filters.search) {
     const q = filters.search.toLowerCase();
     result = result.filter(r =>
@@ -93,21 +70,47 @@ function applyFilters() {
   renderCards(result);
 }
 
-// ─── Чипы фильтров ───────────────────────────────────────────────────────────
-document.querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const ft = chip.dataset.filter;
-    document.querySelectorAll(`.chip[data-filter="${ft}"]`).forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    filters[ft] = chip.dataset.value;
-    applyFilters();
-  });
-});
+function renderCards(recipes) {
+  const grid  = document.getElementById('recipes-grid');
+  const empty = document.getElementById('empty-state');
+  grid.innerHTML = '';
 
+  if (!recipes.length) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  recipes.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+
+    const imageHtml = r.image_url
+      ? `<img class="card-image" src="${r.image_url}" alt="${r.title}" loading="lazy" />`
+      : `<div class="card-image-placeholder">${r.emoji || '🍽️'}</div>`;
+
+    const typeLabel   = r.type   || r.meal   || '';
+    const methodLabel = r.method || '';
+
+    card.innerHTML = `
+      ${imageHtml}
+      <div class="card-body">
+        <div class="card-meta">
+          ${typeLabel   ? `<span class="badge-meal">${typeLabel}</span>`     : ''}
+          ${methodLabel ? `<span class="badge-method">${methodLabel}</span>` : ''}
+          ${r.time_minutes ? `<span class="badge-time">⏱ ${r.time_minutes} мин</span>` : ''}
+        </div>
+        <div class="card-title">${r.title}</div>
+        <div class="card-tags">${(r.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>`;
+
+    card.addEventListener('click', () => openModal(r));
+    grid.appendChild(card);
+  });
+}
+
+// ─── Search ───────────────────────────────────────────────────────────
 document.getElementById('search-input').addEventListener('input', e => {
   filters.search = e.target.value.trim();
   applyFilters();
 });
 
-// ─── Старт ────────────────────────────────────────────────────────────────────
+// ─── Start ────────────────────────────────────────────────────────────
 loadRecipes();
