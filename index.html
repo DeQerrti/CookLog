@@ -4,24 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>CookLog</title>
-
-<!-- PWA Meta Tags -->
 <meta name="theme-color" content="#1c1f17" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="CookLog" />
 <meta name="description" content="Личный дневник рецептов" />
-
-<!-- PWA Icons for Apple -->
-<link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png" />
-
-<!-- Manifest -->
+<link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="manifest" href="manifest.json" />
-
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
@@ -63,6 +53,8 @@
     </div>
   </section>
 
+  <div class="recipes-count" id="recipes-count"></div>
+
   <section class="recipes-section">
     <div class="recipes-grid" id="recipes-grid"></div>
     <div class="empty-state hidden" id="empty-state">
@@ -79,7 +71,6 @@
   </div>
 </div>
 
-<!-- PWA Install Banner -->
 <div class="pwa-banner hidden" id="pwa-banner">
   <span class="pwa-banner-icon">📱</span>
   <span class="pwa-banner-text">Установить CookLog на экран</span>
@@ -92,16 +83,12 @@
 <script src="js/recipes.js"></script>
 <script src="js/modal.js"></script>
 <script>
-  // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/CookLog/sw.js')
-        .then(reg => console.log('SW registered:', reg.scope))
-        .catch(err => console.log('SW error:', err));
+      navigator.serviceWorker.register('/CookLog/sw.js').catch(() => {});
     });
   }
 
-  // PWA Install Prompt
   let deferredPrompt;
   const banner = document.getElementById('pwa-banner');
   const installBtn = document.getElementById('pwa-install-btn');
@@ -110,14 +97,13 @@
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // Show banner after 3 seconds
     setTimeout(() => banner.classList.remove('hidden'), 3000);
   });
 
   installBtn.addEventListener('click', async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    await deferredPrompt.userChoice;
     deferredPrompt = null;
     banner.classList.add('hidden');
   });
@@ -127,15 +113,8 @@
     localStorage.setItem('pwa-banner-dismissed', '1');
   });
 
-  // Don't show if already dismissed
-  if (localStorage.getItem('pwa-banner-dismissed')) {
-    banner.remove();
-  }
-
-  // Hide banner if already installed
-  window.addEventListener('appinstalled', () => {
-    banner.classList.add('hidden');
-  });
+  if (localStorage.getItem('pwa-banner-dismissed')) banner.remove();
+  window.addEventListener('appinstalled', () => banner.classList.add('hidden'));
 </script>
 </body>
 </html>
