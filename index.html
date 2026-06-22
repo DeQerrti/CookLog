@@ -1,71 +1,141 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CookLog</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CookLog</title>
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#1c1f17" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="CookLog" />
+<meta name="description" content="Личный дневник рецептов" />
+
+<!-- PWA Icons for Apple -->
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png" />
+
+<!-- Manifest -->
+<link rel="manifest" href="manifest.json" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="logo">
-        <span class="logo-icon">🍲</span>
-        <span class="logo-text">CookLog</span>
-      </div>
-      <nav class="header-nav">
-        <a href="index.html" class="nav-link active">Рецепты</a>
-        <a href="admin.html" class="nav-link nav-admin">+ Добавить</a>
-      </nav>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🍲</span>
+      <span class="logo-text">CookLog</span>
     </div>
-  </header>
-
-  <main class="main">
-
-    <section class="filters-section">
-      <div class="filters-row">
-        <div class="filter-group">
-          <span class="filter-label">Тип блюда</span>
-          <div class="filter-chips" id="type-chips">
-            <button class="chip active" data-filter="type" data-value="">Все</button>
-          </div>
-        </div>
-        <div class="filter-group">
-          <span class="filter-label">Способ готовки</span>
-          <div class="filter-chips" id="method-chips">
-            <button class="chip active" data-filter="method" data-value="">Все</button>
-          </div>
-        </div>
-        <div class="filter-group filter-search">
-          <span class="filter-label">Поиск</span>
-          <input type="text" id="search-input" class="search-input" placeholder="Название, ингредиент или тег…" />
-        </div>
-      </div>
-    </section>
-
-    <section class="recipes-section">
-      <div class="recipes-grid" id="recipes-grid"></div>
-      <div class="empty-state hidden" id="empty-state">
-        <span class="empty-icon">🍽️</span>
-        <p>Рецепты не найдены. Попробуй другие фильтры.</p>
-      </div>
-    </section>
-
-  </main>
-
-  <div class="modal-overlay hidden" id="modal-overlay">
-    <div class="modal" id="modal">
-      <button class="modal-close" id="modal-close">✕</button>
-      <div class="modal-content" id="modal-content"></div>
-    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link active">Рецепты</a>
+      <a href="admin.html" class="nav-link nav-admin">+ Добавить</a>
+    </nav>
   </div>
+</header>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js"></script>
-  <script src="js/recipes.js"></script>
-  <script src="js/modal.js"></script>
+<main class="main">
+  <section class="filters-section">
+    <div class="filters-row">
+      <div class="filter-group">
+        <span class="filter-label">Тип блюда</span>
+        <div class="filter-chips" id="type-chips">
+          <button class="chip active" data-filter="type" data-value="">Все</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Способ готовки</span>
+        <div class="filter-chips" id="method-chips">
+          <button class="chip active" data-filter="method" data-value="">Все</button>
+        </div>
+      </div>
+      <div class="filter-group filter-search">
+        <span class="filter-label">Поиск</span>
+        <input type="text" id="search-input" class="search-input" placeholder="Название, ингредиент или тег…" />
+      </div>
+    </div>
+  </section>
+
+  <section class="recipes-section">
+    <div class="recipes-grid" id="recipes-grid"></div>
+    <div class="empty-state hidden" id="empty-state">
+      <span class="empty-icon">🍽️</span>
+      <p>Рецепты не найдены. Попробуй другие фильтры.</p>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div class="pwa-banner hidden" id="pwa-banner">
+  <span class="pwa-banner-icon">📱</span>
+  <span class="pwa-banner-text">Установить CookLog на экран</span>
+  <button class="pwa-banner-btn" id="pwa-install-btn">Установить</button>
+  <button class="pwa-banner-close" id="pwa-banner-close">✕</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/recipes.js"></script>
+<script src="js/modal.js"></script>
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/CookLog/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
+
+  // PWA Install Prompt
+  let deferredPrompt;
+  const banner = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const closeBtn = document.getElementById('pwa-banner-close');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show banner after 3 seconds
+    setTimeout(() => banner.classList.remove('hidden'), 3000);
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    banner.classList.add('hidden');
+  });
+
+  closeBtn.addEventListener('click', () => {
+    banner.classList.add('hidden');
+    localStorage.setItem('pwa-banner-dismissed', '1');
+  });
+
+  // Don't show if already dismissed
+  if (localStorage.getItem('pwa-banner-dismissed')) {
+    banner.remove();
+  }
+
+  // Hide banner if already installed
+  window.addEventListener('appinstalled', () => {
+    banner.classList.add('hidden');
+  });
+</script>
 </body>
 </html>
