@@ -25,12 +25,11 @@
 
   <main class="main">
 
-    <!-- Фильтры -->
     <section class="filters-section">
       <div class="filters-row">
         <div class="filter-group">
           <span class="filter-label">Приём пищи</span>
-          <div class="filter-chips" id="meal-filters">
+          <div class="filter-chips">
             <button class="chip active" data-filter="meal" data-value="">Все</button>
             <button class="chip" data-filter="meal" data-value="breakfast">Завтрак</button>
             <button class="chip" data-filter="meal" data-value="lunch">Обед</button>
@@ -40,7 +39,7 @@
         </div>
         <div class="filter-group">
           <span class="filter-label">Способ готовки</span>
-          <div class="filter-chips" id="method-filters">
+          <div class="filter-chips">
             <button class="chip active" data-filter="method" data-value="">Все</button>
             <button class="chip" data-filter="method" data-value="fry">Жарка</button>
             <button class="chip" data-filter="method" data-value="boil">Варка</button>
@@ -49,16 +48,14 @@
           </div>
         </div>
         <div class="filter-group filter-search">
-          <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или ингредиенту..." />
+          <span class="filter-label">Поиск</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Название или ингредиент..." />
         </div>
       </div>
     </section>
 
-    <!-- Лента рецептов -->
     <section class="recipes-section">
-      <div class="recipes-grid" id="recipes-grid">
-        <!-- Карточки вставляются через JS -->
-      </div>
+      <div class="recipes-grid" id="recipes-grid"></div>
       <div class="empty-state hidden" id="empty-state">
         <span class="empty-icon">🍽️</span>
         <p>Рецепты не найдены. Попробуй другие фильтры.</p>
@@ -67,16 +64,15 @@
 
   </main>
 
-  <!-- Модальное окно рецепта -->
   <div class="modal-overlay hidden" id="modal-overlay">
     <div class="modal" id="modal">
       <button class="modal-close" id="modal-close">✕</button>
-      <div class="modal-content" id="modal-content">
-        <!-- Заполняется через JS -->
-      </div>
+      <div class="modal-content" id="modal-content"></div>
     </div>
   </div>
 
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
   <script src="js/recipes.js"></script>
   <script src="js/modal.js"></script>
