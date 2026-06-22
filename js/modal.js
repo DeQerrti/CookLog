@@ -1,51 +1,38 @@
-const overlay = document.getElementById('modal-overlay');
+const overlay      = document.getElementById('modal-overlay');
 const modalContent = document.getElementById('modal-content');
 
-function openModal(recipe) {
-  const imageHtml = recipe.image
-    ? `<img class="modal-image" src="${recipe.image}" alt="${recipe.title}" />`
+function openModal(r) {
+  const imageHtml = r.image_url
+    ? `<img class="modal-image" src="${r.image_url}" alt="${r.title}" />`
     : '';
 
-  const ingredientsHtml = recipe.ingredients
-    .map(i => `<li>${i}</li>`)
-    .join('');
+  const ingredientsHtml = (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
+  const stepsHtml = (r.steps || []).map((s, idx) => `
+    <div class="step">
+      <div class="step-num">${idx + 1}</div>
+      <div class="step-text">${s}</div>
+    </div>`).join('');
 
-  const stepsHtml = recipe.steps
-    .map((s, idx) => `
-      <div class="step">
-        <div class="step-num">${idx + 1}</div>
-        <div class="step-text">${s}</div>
-      </div>
-    `)
-    .join('');
+  const tagsHtml   = (r.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+  const typeLabel   = r.type   || r.meal   || '';
+  const methodLabel = r.method || '';
 
-  const tagsHtml = recipe.tags.map(t => `<span class="tag">${t}</span>`).join('');
-
-  const sourceHtml = recipe.source
-    ? `<div class="modal-source">Источник: <a href="${recipe.source.url}" target="_blank" rel="noopener">${recipe.source.label}</a></div>`
+  const sourceHtml = (r.source_label || r.source_url)
+    ? `<div class="modal-source">Источник: <a href="${r.source_url || '#'}" target="_blank" rel="noopener">${r.source_label || r.source_url}</a></div>`
     : '';
-
-  const MEAL_LABELS = { breakfast: 'Завтрак', lunch: 'Обед', dinner: 'Ужин', snack: 'Перекус' };
-  const METHOD_LABELS = { fry: 'Жарка', boil: 'Варка', bake: 'Запекание', raw: 'Без готовки' };
 
   modalContent.innerHTML = `
     ${imageHtml}
     <div class="modal-meta">
-      ${recipe.meal ? `<span class="badge-meal">${MEAL_LABELS[recipe.meal] || recipe.meal}</span>` : ''}
-      ${recipe.method ? `<span class="badge-method">${METHOD_LABELS[recipe.method] || recipe.method}</span>` : ''}
-      ${recipe.time ? `<span class="badge-time">⏱ ${recipe.time}</span>` : ''}
+      ${typeLabel   ? `<span class="badge-meal">${typeLabel}</span>`     : ''}
+      ${methodLabel ? `<span class="badge-method">${methodLabel}</span>` : ''}
+      ${r.time_minutes ? `<span class="badge-time">⏱ ${r.time_minutes} мин</span>` : ''}
     </div>
-    <div class="modal-title">${recipe.title}</div>
-
-    <div class="modal-section-title">Ингредиенты</div>
-    <ul class="ingredients-list">${ingredientsHtml}</ul>
-
-    <div class="modal-section-title">Приготовление</div>
-    <div class="modal-steps">${stepsHtml}</div>
-
-    <div class="modal-tags">${tagsHtml}</div>
-    ${sourceHtml}
-  `;
+    <div class="modal-title">${r.title}</div>
+    ${ingredientsHtml ? `<div class="modal-section-title">Ингредиенты</div><ul class="ingredients-list">${ingredientsHtml}</ul>` : ''}
+    ${stepsHtml ? `<div class="modal-section-title">Приготовление</div><div class="modal-steps">${stepsHtml}</div>` : ''}
+    ${tagsHtml ? `<div class="modal-tags">${tagsHtml}</div>` : ''}
+    ${sourceHtml}`;
 
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
