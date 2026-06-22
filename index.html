@@ -28,28 +28,20 @@
     <section class="filters-section">
       <div class="filters-row">
         <div class="filter-group">
-          <span class="filter-label">Приём пищи</span>
-          <div class="filter-chips">
-            <button class="chip active" data-filter="meal" data-value="">Все</button>
-            <button class="chip" data-filter="meal" data-value="breakfast">Завтрак</button>
-            <button class="chip" data-filter="meal" data-value="lunch">Обед</button>
-            <button class="chip" data-filter="meal" data-value="dinner">Ужин</button>
-            <button class="chip" data-filter="meal" data-value="snack">Перекус</button>
+          <span class="filter-label">Тип блюда</span>
+          <div class="filter-chips" id="type-chips">
+            <button class="chip active" data-filter="type" data-value="">Все</button>
           </div>
         </div>
         <div class="filter-group">
           <span class="filter-label">Способ готовки</span>
-          <div class="filter-chips">
+          <div class="filter-chips" id="method-chips">
             <button class="chip active" data-filter="method" data-value="">Все</button>
-            <button class="chip" data-filter="method" data-value="fry">Жарка</button>
-            <button class="chip" data-filter="method" data-value="boil">Варка</button>
-            <button class="chip" data-filter="method" data-value="bake">Запекание</button>
-            <button class="chip" data-filter="method" data-value="raw">Без готовки</button>
           </div>
         </div>
         <div class="filter-group filter-search">
           <span class="filter-label">Поиск</span>
-          <input type="text" id="search-input" class="search-input" placeholder="Название или ингредиент..." />
+          <input type="text" id="search-input" class="search-input" placeholder="Название, ингредиент или тег…" />
         </div>
       </div>
     </section>
@@ -71,7 +63,6 @@
     </div>
   </div>
 
-  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
   <script src="js/recipes.js"></script>
