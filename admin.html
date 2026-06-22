@@ -3,161 +3,918 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CookLog — Добавить рецепт</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css" />
+  <title>CookLog — Редактор рецептов</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --surface: #242424;
+      --surface2: #2e2e2e;
+      --border: #3a3a3a;
+      --accent: #e87c3e;
+      --accent-hover: #f08c50;
+      --text: #f0ece4;
+      --muted: #888;
+      --danger: #e05555;
+      --success: #5cb85c;
+      --tag-bg: #3a2a1a;
+      --tag-border: #c46a20;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    header a:hover { color: var(--text); }
+    .logo { font-size: 20px; font-weight: 700; color: var(--accent); }
+    header .spacer { flex: 1; }
+    #headerTitle { font-size: 14px; color: var(--muted); }
+
+    /* ── Auth overlay ── */
+    #authWrap {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+    }
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      width: 340px;
+      text-align: center;
+    }
+    .auth-box h2 { margin-bottom: 8px; }
+    .auth-box p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .auth-box input {
+      width: 100%; padding: 10px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-size: 15px; margin-bottom: 12px;
+    }
+    #authError { color: var(--danger); font-size: 13px; min-height: 20px; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ── Section titles ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-header h2 { font-size: 18px; font-weight: 600; }
+
+    /* ── Recipe list ── */
+    #recipeList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+    .recipe-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color .15s, transform .1s;
+      position: relative;
+    }
+    .recipe-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .recipe-card .card-emoji { font-size: 28px; margin-bottom: 8px; display: block; }
+    .recipe-card .card-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .recipe-card .card-meta { font-size: 12px; color: var(--muted); }
+    .recipe-card .card-actions {
+      position: absolute; top: 10px; right: 10px;
+      display: flex; gap: 6px; opacity: 0; transition: opacity .15s;
+    }
+    .recipe-card:hover .card-actions { opacity: 1; }
+    .btn-icon {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 4px 8px;
+      cursor: pointer; font-size: 13px; line-height: 1;
+      transition: background .12s;
+    }
+    .btn-icon:hover { background: var(--border); }
+    .btn-icon.danger:hover { background: var(--danger); border-color: var(--danger); }
+
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center; padding: 40px;
+      color: var(--muted); font-size: 14px;
+    }
+
+    /* ── Form ── */
+    #formWrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+    }
+    #formWrap h2 { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .form-grid .full { grid-column: 1/-1; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: var(--muted); font-weight: 500; }
+    .field input,
+    .field textarea,
+    .field select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 14px;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .field textarea { resize: vertical; min-height: 100px; }
+    .field select option { background: #2a2a2a; }
+
+    /* ── Category selector with manage ── */
+    .cat-field { display: flex; flex-direction: column; gap: 6px; }
+    .cat-row { display: flex; gap: 8px; align-items: center; }
+    .cat-row select { flex: 1; }
+    .btn-manage {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px;
+      padding: 10px 12px; cursor: pointer; font-size: 13px;
+      white-space: nowrap; transition: all .15s;
+    }
+    .btn-manage:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Category manager modal ── */
+    #catModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    #catModal.open { display: flex; }
+    .cat-modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      width: 360px;
+      max-height: 80vh;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .cat-modal-box h3 { font-size: 16px; font-weight: 600; }
+    .cat-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 240px; }
+    .cat-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface2); border-radius: 8px;
+      padding: 8px 12px; font-size: 14px;
+    }
+    .cat-item .cat-name { flex: 1; }
+    .cat-item .cat-default { font-size: 11px; color: var(--muted); margin-left: 8px; }
+    .cat-add-row { display: flex; gap: 8px; }
+    .cat-add-row input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px; padding: 8px 12px;
+    }
+    .cat-add-row input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Tags ── */
+    .tags-area {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .tags-input-row { display: flex; gap: 8px; align-items: center; }
+    .tags-input-row input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 15px; padding: 10px 14px;
+    }
+    .tags-input-row input:focus { outline: none; border-color: var(--accent); }
+    .tags-display { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-chip {
+      background: var(--tag-bg); border: 1px solid var(--tag-border);
+      color: var(--accent); border-radius: 20px;
+      padding: 3px 10px; font-size: 13px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .tag-chip button {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 12px; padding: 0; line-height: 1;
+    }
+    .tag-chip button:hover { color: var(--danger); }
+    .saved-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .saved-tag-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 16px;
+      padding: 2px 9px; font-size: 12px; cursor: pointer;
+      transition: all .12s;
+    }
+    .saved-tag-btn:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: var(--tag-bg);
+    }
+    .saved-tag-btn.used { opacity: .4; cursor: default; }
+    .tags-hint { font-size: 12px; color: var(--muted); }
+
+    /* ── Ingredients auto-tag hint ── */
+    .field .parsed-preview {
+      font-size: 12px; color: var(--muted);
+      display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    }
+    .field .parsed-preview span { color: var(--accent); font-size: 12px; }
+
+    /* ── Emoji selector ── */
+    .emoji-grid {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .emoji-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 8px;
+      font-size: 18px; cursor: pointer; transition: all .1s;
+    }
+    .emoji-btn:hover { border-color: var(--accent); transform: scale(1.1); }
+    .emoji-btn.active { border-color: var(--accent); background: var(--tag-bg); }
+
+    /* ── Preview card ── */
+    .preview-wrap { margin-top: 24px; }
+    .preview-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .preview-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .preview-card .p-emoji { font-size: 40px; line-height: 1; }
+    .preview-card .p-img {
+      width: 60px; height: 60px; border-radius: 8px; object-fit: cover;
+    }
+    .preview-card .p-info { flex: 1; }
+    .preview-card .p-title { font-weight: 600; font-size: 16px; }
+    .preview-card .p-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .preview-card .p-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .preview-card .p-tag {
+      background: var(--tag-bg); color: var(--accent);
+      border-radius: 12px; padding: 1px 8px; font-size: 11px;
+    }
+
+    /* ── Buttons ── */
+    .form-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+    .btn {
+      padding: 11px 24px; border-radius: 8px;
+      font-size: 15px; font-weight: 500; cursor: pointer;
+      border: none; transition: all .15s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-danger-outline {
+      background: none; color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-danger-outline:hover { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 6px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 20px;
+      font-size: 14px; color: var(--text);
+      transform: translateY(80px); opacity: 0;
+      transition: all .25s; pointer-events: none; z-index: 999;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-color: var(--success); }
+    #toast.error { border-color: var(--danger); }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .container { padding: 20px 16px; }
+      #formWrap { padding: 20px 16px; }
+    }
+  </style>
 </head>
 <body>
 
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="logo">
-        <span class="logo-icon">🍲</span>
-        <span class="logo-text">CookLog</span>
-      </div>
-      <nav class="header-nav">
-        <a href="index.html" class="nav-link">← Все рецепты</a>
-      </nav>
-    </div>
-  </header>
+<!-- Auth -->
+<div id="authWrap">
+  <div class="auth-box">
+    <h2>🔑 Вход</h2>
+    <p>Эта страница только для тебя</p>
+    <input type="password" id="pwInput" placeholder="Пароль" />
+    <div id="authError"></div>
+    <br/>
+    <button class="btn btn-primary" style="width:100%" onclick="checkAuth()">Войти</button>
+  </div>
+</div>
 
-  <!-- Экран пароля -->
-  <div class="auth-screen" id="auth-screen">
-    <div class="auth-card">
-      <div class="auth-icon">🔑</div>
-      <h2 class="auth-title">Вход</h2>
-      <p class="auth-subtitle">Эта страница только для тебя</p>
-      <input type="password" id="password-input" class="auth-input" placeholder="Пароль..." />
-      <button class="btn-primary" id="auth-btn">Войти</button>
-      <p class="auth-error hidden" id="auth-error">Неверный пароль</p>
+<!-- Header -->
+<header>
+  <a href="index.html">← Все рецепты</a>
+  <span class="logo">🍲 CookLog</span>
+  <span class="spacer"></span>
+  <span id="headerTitle">Редактор</span>
+</header>
+
+<!-- Category manager modal -->
+<div id="catModal">
+  <div class="cat-modal-box">
+    <h3 id="catModalTitle">Управление категориями</h3>
+    <div class="cat-list" id="catList"></div>
+    <div class="cat-add-row">
+      <input type="text" id="newCatInput" placeholder="Новая категория…" />
+      <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Добавить</button>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="closeCatModal()" style="align-self:flex-end">Готово</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Recipe list -->
+  <div class="section-header">
+    <h2>Мои рецепты</h2>
+    <button class="btn btn-primary btn-sm" onclick="newRecipe()">+ Новый рецепт</button>
+  </div>
+  <div id="recipeList"></div>
+
+  <!-- Form -->
+  <div id="formWrap" style="display:none">
+    <h2 id="formTitle">Новый рецепт</h2>
+
+    <div class="form-grid">
+
+      <!-- Название -->
+      <div class="field full">
+        <label>Название *</label>
+        <input type="text" id="fTitle" placeholder="Паста карбонара…" oninput="updatePreview()" />
+      </div>
+
+      <!-- Тип блюда -->
+      <div class="field cat-field">
+        <label>Тип блюда</label>
+        <div class="cat-row">
+          <select id="fType" oninput="updatePreview()">
+            <option value="">— не указано —</option>
+          </select>
+          <button class="btn-manage" onclick="openCatModal('type')">⚙ Категории</button>
+        </div>
+      </div>
+
+      <!-- Способ готовки -->
+      <div class="field cat-field">
+        <label>Способ готовки</label>
+        <div class="cat-row">
+          <select id="fMethod" oninput="updatePreview()">
+            <option value="">— не указано —</option>
+          </select>
+          <button class="btn-manage" onclick="openCatModal('method')">⚙ Категории</button>
+        </div>
+      </div>
+
+      <!-- Время -->
+      <div class="field">
+        <label>Время (мин)</label>
+        <input type="number" id="fTime" min="1" max="999" placeholder="30" oninput="updatePreview()" />
+      </div>
+
+      <!-- Источник -->
+      <div class="field">
+        <label>Источник</label>
+        <input type="text" id="fSource" placeholder="Бабушкин рецепт…" />
+      </div>
+
+      <!-- Ингредиенты -->
+      <div class="field full">
+        <label>Ингредиенты — по одному на строку</label>
+        <textarea id="fIngredients" rows="5" placeholder="Яйцо — 2 шт&#10;Мука — 200 г&#10;Молоко — 1 стакан" oninput="onIngredientsChange()"></textarea>
+        <div class="parsed-preview" id="parsedTags"></div>
+      </div>
+
+      <!-- Шаги -->
+      <div class="field full">
+        <label>Способ приготовления — каждый шаг с новой строки</label>
+        <textarea id="fSteps" rows="6" placeholder="Смешать яйца с мукой&#10;Добавить молоко и соль&#10;Жарить на среднем огне по 2 мин с каждой стороны"></textarea>
+      </div>
+
+      <!-- Фото -->
+      <div class="field full">
+        <label>Фото — URL картинки (необязательно)</label>
+        <input type="url" id="fPhoto" placeholder="https://…" oninput="updatePreview()" />
+      </div>
+
+      <!-- Эмодзи -->
+      <div class="field full">
+        <label>Эмодзи — если нет фото</label>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+
+      <!-- Теги -->
+      <div class="field full">
+        <label>Теги / Ингредиенты</label>
+        <div class="tags-area">
+          <div class="tags-display" id="tagsDisplay"></div>
+          <div class="tags-input-row">
+            <input type="text" id="tagInput" placeholder="Добавить тег и Enter…"
+              onkeydown="tagKeydown(event)" oninput="updateTagSuggestions()" />
+            <button class="btn btn-secondary btn-sm" onclick="addTagFromInput()">+ Добавить</button>
+          </div>
+          <div class="tags-hint">Сохранённые теги:</div>
+          <div class="saved-tags" id="savedTags"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-wrap">
+      <div class="preview-label">Превью карточки</div>
+      <div class="preview-card" id="previewCard">
+        <span class="p-emoji" id="pEmoji">🍽️</span>
+        <div class="p-info">
+          <div class="p-title" id="pTitle">Название рецепта</div>
+          <div class="p-meta" id="pMeta"></div>
+          <div class="p-tags" id="pTags"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveRecipe()">💾 Сохранить</button>
+      <button class="btn btn-secondary" onclick="clearForm()">✕ Очистить</button>
+      <button class="btn btn-secondary" onclick="cancelEdit()">← К списку</button>
+      <button class="btn btn-danger-outline" id="btnDelete" onclick="deleteCurrentRecipe()" style="display:none">🗑 Удалить рецепт</button>
     </div>
   </div>
 
-  <!-- Форма добавления рецепта -->
-  <main class="main hidden" id="admin-main">
-    <div class="admin-header">
-      <h1 class="admin-title">Новый рецепт</h1>
-      <div class="admin-actions">
-        <button class="btn-secondary" id="clear-btn">Очистить</button>
-        <button class="btn-primary" id="save-btn">Сохранить рецепт</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const PASSWORD = 'cooklog2024'; // поменяй на свой
+
+const EMOJIS = ['🍳','🥗','🍜','🥩','🍲','🥣','🍕','🥚','🥞','🍱','🥘','🍛','🍝','🥙','🌮','🫕','🍣','🥗','🫔','🍞'];
+
+const DEFAULT_TYPES   = ['Суп','Второе','Завтрак','Десерт','Перекус','Салат','Напиток'];
+const DEFAULT_METHODS = ['Жарка','Варка','Запекание','Тушение','Без готовки','Гриль','Пар'];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let recipes = [];
+let selectedEmoji = '🍳';
+let currentTags   = [];
+let editingId     = null;
+let currentCatGroup = 'type'; // 'type' | 'method'
+
+// ══════════════════════════════════════════
+//  STORAGE HELPERS
+// ══════════════════════════════════════════
+const load  = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
+const save  = (k, v)  => localStorage.setItem(k, JSON.stringify(v));
+
+function getTypes()   { return load('cl_types',   DEFAULT_TYPES); }
+function getMethods() { return load('cl_methods',  DEFAULT_METHODS); }
+function getAllTags()  {
+  const set = new Set();
+  recipes.forEach(r => (r.tags||[]).forEach(t => set.add(t)));
+  return [...set].sort();
+}
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+function checkAuth() {
+  const v = document.getElementById('pwInput').value;
+  if (v === PASSWORD) {
+    document.getElementById('authWrap').style.display = 'none';
+    init();
+  } else {
+    document.getElementById('authError').textContent = 'Неверный пароль';
+  }
+}
+document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key==='Enter') checkAuth(); });
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function init() {
+  recipes = load('cl_recipes', []);
+  buildEmojiGrid();
+  renderRecipeList();
+  populateCategorySelects();
+  renderSavedTags();
+}
+
+// ══════════════════════════════════════════
+//  EMOJI GRID
+// ══════════════════════════════════════════
+function buildEmojiGrid() {
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = '';
+  EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn' + (em === selectedEmoji ? ' active' : '');
+    btn.textContent = em;
+    btn.type = 'button';
+    btn.onclick = () => { selectedEmoji = em; buildEmojiGrid(); updatePreview(); };
+    grid.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════
+//  CATEGORY SELECTS
+// ══════════════════════════════════════════
+function populateCategorySelects() {
+  populateSelect('fType',   getTypes());
+  populateSelect('fMethod', getMethods());
+}
+
+function populateSelect(id, items) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— не указано —</option>';
+  items.forEach(it => {
+    const o = document.createElement('option');
+    o.value = it; o.textContent = it;
+    sel.appendChild(o);
+  });
+  if (items.includes(cur)) sel.value = cur;
+}
+
+// ══════════════════════════════════════════
+//  CATEGORY MODAL
+// ══════════════════════════════════════════
+function openCatModal(group) {
+  currentCatGroup = group;
+  document.getElementById('catModalTitle').textContent =
+    group === 'type' ? 'Типы блюда' : 'Способы готовки';
+  renderCatList();
+  document.getElementById('catModal').classList.add('open');
+}
+function closeCatModal() {
+  document.getElementById('catModal').classList.remove('open');
+  populateCategorySelects();
+}
+
+function renderCatList() {
+  const items = currentCatGroup === 'type' ? getTypes() : getMethods();
+  const defaults = currentCatGroup === 'type' ? DEFAULT_TYPES : DEFAULT_METHODS;
+  const el = document.getElementById('catList');
+  el.innerHTML = '';
+  items.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'cat-item';
+    const isDefault = defaults.includes(name);
+    div.innerHTML = `<span class="cat-name">${name}</span>
+      ${isDefault ? '<span class="cat-default">по умолчанию</span>' : ''}
+      <button class="btn-icon danger" onclick="removeCategory('${name.replace(/'/g,"\\'")}')">✕</button>`;
+    el.appendChild(div);
+  });
+}
+
+function addCategory() {
+  const input = document.getElementById('newCatInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const key = currentCatGroup === 'type' ? 'cl_types' : 'cl_methods';
+  const items = currentCatGroup === 'type' ? getTypes() : getMethods();
+  if (items.includes(val)) { showToast('Такая категория уже есть', 'error'); return; }
+  items.push(val);
+  save(key, items);
+  input.value = '';
+  renderCatList();
+}
+
+function removeCategory(name) {
+  const key = currentCatGroup === 'type' ? 'cl_types' : 'cl_methods';
+  let items = currentCatGroup === 'type' ? getTypes() : getMethods();
+  items = items.filter(i => i !== name);
+  save(key, items);
+  renderCatList();
+}
+
+document.getElementById('newCatInput').addEventListener('keydown', e => { if (e.key === 'Enter') addCategory(); });
+document.getElementById('catModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('catModal')) closeCatModal();
+});
+
+// ══════════════════════════════════════════
+//  TAGS
+// ══════════════════════════════════════════
+function renderCurrentTags() {
+  const display = document.getElementById('tagsDisplay');
+  display.innerHTML = '';
+  currentTags.forEach(t => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${t} <button onclick="removeTag('${t.replace(/'/g,"\\'")}')">✕</button>`;
+    display.appendChild(chip);
+  });
+  updatePreview();
+  renderSavedTags();
+}
+
+function removeTag(t) {
+  currentTags = currentTags.filter(x => x !== t);
+  renderCurrentTags();
+}
+
+function addTagFromInput() {
+  const inp = document.getElementById('tagInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!currentTags.includes(val)) { currentTags.push(val); renderCurrentTags(); }
+  inp.value = '';
+}
+
+function tagKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addTagFromInput(); }
+}
+
+function updateTagSuggestions() { /* live search could go here */ }
+
+function renderSavedTags() {
+  const all = getAllTags();
+  const el = document.getElementById('savedTags');
+  el.innerHTML = '';
+  if (!all.length) { el.textContent = 'пока нет'; return; }
+  all.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'saved-tag-btn' + (currentTags.includes(t) ? ' used' : '');
+    btn.textContent = t;
+    btn.onclick = () => {
+      if (!currentTags.includes(t)) { currentTags.push(t); renderCurrentTags(); }
+    };
+    el.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════
+//  INGREDIENTS AUTO-PARSE
+// ══════════════════════════════════════════
+function parseIngredientTag(line) {
+  // "Яйцо — 2 шт" → "яйцо"
+  const word = line.split(/[\s—\-–:,]/)[0].trim().toLowerCase();
+  return word || null;
+}
+
+function onIngredientsChange() {
+  const lines = document.getElementById('fIngredients').value
+    .split('\n').map(l => l.trim()).filter(Boolean);
+
+  const parsed = lines.map(parseIngredientTag).filter(Boolean);
+
+  // show preview
+  const preview = document.getElementById('parsedTags');
+  if (parsed.length) {
+    preview.innerHTML = '→ авто-теги: ' + parsed.map(t => `<span>${t}</span>`).join(' ');
+  } else {
+    preview.innerHTML = '';
+  }
+
+  // auto-add new ones
+  parsed.forEach(t => { if (!currentTags.includes(t)) currentTags.push(t); });
+  renderCurrentTags();
+}
+
+// ══════════════════════════════════════════
+//  PREVIEW
+// ══════════════════════════════════════════
+function updatePreview() {
+  const title  = document.getElementById('fTitle').value || 'Название рецепта';
+  const time   = document.getElementById('fTime').value;
+  const type   = document.getElementById('fType').value;
+  const method = document.getElementById('fMethod').value;
+  const photo  = document.getElementById('fPhoto').value;
+
+  document.getElementById('pEmoji').textContent = selectedEmoji;
+  document.getElementById('pTitle').textContent = title;
+
+  const meta = [type, method, time ? time + ' мин' : ''].filter(Boolean).join(' · ');
+  document.getElementById('pMeta').textContent = meta;
+
+  const pTags = document.getElementById('pTags');
+  pTags.innerHTML = currentTags.slice(0,5).map(t => `<span class="p-tag">${t}</span>`).join('');
+
+  const card = document.getElementById('previewCard');
+  // show photo if valid url
+  let imgEl = card.querySelector('.p-img');
+  if (photo) {
+    if (!imgEl) {
+      imgEl = document.createElement('img');
+      imgEl.className = 'p-img';
+      card.insertBefore(imgEl, card.firstChild);
+    }
+    imgEl.src = photo;
+    imgEl.onerror = () => imgEl.remove();
+    document.getElementById('pEmoji').style.display = 'none';
+  } else {
+    if (imgEl) imgEl.remove();
+    document.getElementById('pEmoji').style.display = '';
+  }
+}
+
+// ══════════════════════════════════════════
+//  RECIPE LIST
+// ══════════════════════════════════════════
+function renderRecipeList() {
+  const el = document.getElementById('recipeList');
+  el.innerHTML = '';
+  if (!recipes.length) {
+    el.innerHTML = '<div class="empty-state">Рецептов пока нет. Нажми «+ Новый рецепт» чтобы добавить первый!</div>';
+    return;
+  }
+  recipes.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    const meta = [r.type, r.method, r.time ? r.time + ' мин' : ''].filter(Boolean).join(' · ');
+    card.innerHTML = `
+      <div class="card-actions">
+        <button class="btn-icon" onclick="editRecipe('${r.id}', event)">✏️</button>
+        <button class="btn-icon danger" onclick="deleteRecipe('${r.id}', event)">🗑</button>
       </div>
-    </div>
+      <span class="card-emoji">${r.emoji || '🍽️'}</span>
+      <div class="card-title">${r.title}</div>
+      <div class="card-meta">${meta || '—'}</div>`;
+    card.onclick = () => editRecipe(r.id);
+    el.appendChild(card);
+  });
+}
 
-    <div class="admin-grid">
+// ══════════════════════════════════════════
+//  FORM ACTIONS
+// ══════════════════════════════════════════
+function newRecipe() {
+  editingId = null;
+  clearForm(false);
+  document.getElementById('formTitle').textContent = 'Новый рецепт';
+  document.getElementById('btnDelete').style.display = 'none';
+  document.getElementById('formWrap').style.display = '';
+  document.getElementById('formWrap').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('headerTitle').textContent = 'Новый рецепт';
+}
 
-      <!-- Левая колонка -->
-      <div class="admin-col">
+function editRecipe(id, e) {
+  if (e) e.stopPropagation();
+  const r = recipes.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
 
-        <div class="field-group">
-          <label class="field-label">Название <span class="required">*</span></label>
-          <input type="text" id="f-title" class="field-input" placeholder="Например: Паста карбонара" />
-        </div>
+  document.getElementById('fTitle').value       = r.title || '';
+  document.getElementById('fTime').value        = r.time  || '';
+  document.getElementById('fSource').value      = r.source || '';
+  document.getElementById('fPhoto').value       = r.photo  || '';
+  document.getElementById('fIngredients').value = r.ingredients || '';
+  document.getElementById('fSteps').value       = r.steps || '';
+  selectedEmoji = r.emoji || '🍳';
 
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label">Приём пищи</label>
-            <select id="f-meal" class="field-select">
-              <option value="">— не указано —</option>
-              <option value="breakfast">Завтрак</option>
-              <option value="lunch">Обед</option>
-              <option value="dinner">Ужин</option>
-              <option value="snack">Перекус</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Способ готовки</label>
-            <select id="f-method" class="field-select">
-              <option value="">— не указано —</option>
-              <option value="fry">Жарка</option>
-              <option value="boil">Варка</option>
-              <option value="bake">Запекание</option>
-              <option value="raw">Без готовки</option>
-            </select>
-          </div>
-          <div class="field-group field-group--sm">
-            <label class="field-label">Время (мин)</label>
-            <input type="number" id="f-time" class="field-input" placeholder="30" min="1" />
-          </div>
-        </div>
+  populateCategorySelects();
+  setTimeout(() => {
+    document.getElementById('fType').value   = r.type   || '';
+    document.getElementById('fMethod').value = r.method || '';
+  }, 0);
 
-        <div class="field-group">
-          <label class="field-label">Ингредиенты <span class="field-hint">— по одному на строке</span></label>
-          <textarea id="f-ingredients" class="field-textarea" rows="7" placeholder="Паста — 200 г&#10;Яйца — 2 шт&#10;Бекон — 100 г&#10;Пармезан — 50 г"></textarea>
-        </div>
+  currentTags = [...(r.tags || [])];
+  buildEmojiGrid();
+  renderCurrentTags();
+  updatePreview();
 
-        <div class="field-group">
-          <label class="field-label">Способ приготовления <span class="field-hint">— каждый шаг с новой строки</span></label>
-          <textarea id="f-steps" class="field-textarea" rows="8" placeholder="Отварить пасту до состояния аль денте.&#10;Обжарить бекон до хруста.&#10;Смешать яйца с тёртым пармезаном..."></textarea>
-        </div>
+  document.getElementById('parsedTags').innerHTML = '';
+  document.getElementById('formTitle').textContent = 'Редактировать рецепт';
+  document.getElementById('btnDelete').style.display = '';
+  document.getElementById('formWrap').style.display = '';
+  document.getElementById('formWrap').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('headerTitle').textContent = r.title;
+}
 
-      </div>
+function clearForm(resetId = true) {
+  if (resetId) editingId = null;
+  ['fTitle','fTime','fSource','fPhoto','fIngredients','fSteps'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fType').value   = '';
+  document.getElementById('fMethod').value = '';
+  selectedEmoji = '🍳';
+  currentTags = [];
+  buildEmojiGrid();
+  renderCurrentTags();
+  updatePreview();
+  document.getElementById('parsedTags').innerHTML = '';
+}
 
-      <!-- Правая колонка -->
-      <div class="admin-col">
+function cancelEdit() {
+  document.getElementById('formWrap').style.display = 'none';
+  document.getElementById('headerTitle').textContent = 'Редактор';
+  editingId = null;
+  clearForm(false);
+}
 
-        <div class="field-group">
-          <label class="field-label">Фото <span class="field-hint">— URL картинки (необязательно)</span></label>
-          <input type="url" id="f-image" class="field-input" placeholder="https://..." />
-          <div class="image-preview hidden" id="image-preview">
-            <img id="preview-img" src="" alt="Превью" />
-          </div>
-        </div>
+function saveRecipe() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { showToast('Введи название рецепта', 'error'); return; }
 
-        <div class="field-group">
-          <label class="field-label">Эмодзи <span class="field-hint">— если нет фото</span></label>
-          <div class="emoji-picker">
-            <input type="text" id="f-emoji" class="field-input field-emoji" placeholder="🍽️" maxlength="2" />
-            <div class="emoji-suggestions">
-              <span class="emoji-opt" data-emoji="🍳">🍳</span>
-              <span class="emoji-opt" data-emoji="🥗">🥗</span>
-              <span class="emoji-opt" data-emoji="🍜">🍜</span>
-              <span class="emoji-opt" data-emoji="🥩">🥩</span>
-              <span class="emoji-opt" data-emoji="🍲">🍲</span>
-              <span class="emoji-opt" data-emoji="🥣">🥣</span>
-              <span class="emoji-opt" data-emoji="🍕">🍕</span>
-              <span class="emoji-opt" data-emoji="🥚">🥚</span>
-              <span class="emoji-opt" data-emoji="🥞">🥞</span>
-              <span class="emoji-opt" data-emoji="🍱">🍱</span>
-              <span class="emoji-opt" data-emoji="🥘">🥘</span>
-              <span class="emoji-opt" data-emoji="🍛">🍛</span>
-            </div>
-          </div>
-        </div>
+  const r = {
+    id:          editingId || Date.now().toString(36) + Math.random().toString(36).slice(2),
+    title,
+    type:        document.getElementById('fType').value,
+    method:      document.getElementById('fMethod').value,
+    time:        parseInt(document.getElementById('fTime').value) || null,
+    source:      document.getElementById('fSource').value.trim(),
+    photo:       document.getElementById('fPhoto').value.trim(),
+    ingredients: document.getElementById('fIngredients').value.trim(),
+    steps:       document.getElementById('fSteps').value.trim(),
+    emoji:       selectedEmoji,
+    tags:        [...currentTags],
+    updated:     Date.now(),
+  };
 
-        <div class="field-group">
-          <label class="field-label">Теги <span class="field-hint">— через запятую</span></label>
-          <input type="text" id="f-tags" class="field-input" placeholder="яйца, быстро, завтрак" />
-        </div>
+  if (editingId) {
+    const idx = recipes.findIndex(x => x.id === editingId);
+    if (idx !== -1) recipes[idx] = r;
+  } else {
+    r.created = Date.now();
+    recipes.unshift(r);
+  }
 
-        <div class="field-group">
-          <label class="field-label">Источник <span class="field-hint">— если рецепт взят откуда-то</span></label>
-          <input type="text" id="f-source-label" class="field-input" placeholder="Название (напр. Рецепт с YouTube)" style="margin-bottom: 8px" />
-          <input type="url" id="f-source-url" class="field-input" placeholder="https://..." />
-        </div>
+  save('cl_recipes', recipes);
+  renderRecipeList();
+  renderSavedTags();
+  showToast(editingId ? 'Рецепт обновлён ✓' : 'Рецепт сохранён ✓', 'success');
+  cancelEdit();
+}
 
-        <!-- Превью карточки -->
-        <div class="field-group">
-          <label class="field-label">Превью карточки</label>
-          <div class="card-preview" id="card-preview">
-            <div class="card-image-placeholder" id="preview-placeholder">🍽️</div>
-            <div class="card-body">
-              <div class="card-meta" id="preview-meta"></div>
-              <div class="card-title" id="preview-title">Название рецепта</div>
-              <div class="card-tags" id="preview-tags"></div>
-            </div>
-          </div>
-        </div>
+function deleteCurrentRecipe() {
+  if (!editingId) return;
+  deleteRecipe(editingId);
+  cancelEdit();
+}
 
-      </div>
-    </div>
+function deleteRecipe(id, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Удалить этот рецепт?')) return;
+  recipes = recipes.filter(r => r.id !== id);
+  save('cl_recipes', recipes);
+  renderRecipeList();
+  showToast('Рецепт удалён', 'error');
+}
 
-    <div class="save-status hidden" id="save-status"></div>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js"></script>
-  <script src="js/admin.js"></script>
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+</script>
 </body>
 </html>
