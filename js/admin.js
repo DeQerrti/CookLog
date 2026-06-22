@@ -1,6 +1,6 @@
 // ─── Пароль (простая защита) ─────────────────────────────────────────────────
 // Смени на свой пароль
-const ADMIN_PASSWORD = 'cooklog2024';
+const ADMIN_PASSWORD = '12179';
 
 const authScreen = document.getElementById('auth-screen');
 const adminMain  = document.getElementById('admin-main');
