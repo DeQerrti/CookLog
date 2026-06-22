@@ -17,7 +17,6 @@ async function loadRecipes() {
 
 // ─── Dynamic filter chips from actual data ────────────────────────────
 function buildDynamicFilters() {
-  // collect unique values
   const types   = [...new Set(allRecipes.map(r => r.type   || r.meal   || '').filter(Boolean))].sort();
   const methods = [...new Set(allRecipes.map(r => r.method || '').filter(Boolean))].sort();
 
@@ -27,7 +26,6 @@ function buildDynamicFilters() {
 
 function buildChips(containerId, filterKey, values) {
   const el = document.getElementById(containerId);
-  // keep "Все" button, rebuild the rest
   el.innerHTML = `<button class="chip active" data-filter="${filterKey}" data-value="">Все</button>`;
   values.forEach(val => {
     const btn = document.createElement('button');
@@ -37,7 +35,6 @@ function buildChips(containerId, filterKey, values) {
     btn.textContent    = val;
     el.appendChild(btn);
   });
-  // re-attach listeners
   el.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => {
       el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -73,10 +70,16 @@ function applyFilters() {
 function renderCards(recipes) {
   const grid  = document.getElementById('recipes-grid');
   const empty = document.getElementById('empty-state');
+  const count = document.getElementById('recipes-count');
   grid.innerHTML = '';
 
-  if (!recipes.length) { empty.classList.remove('hidden'); return; }
+  if (!recipes.length) {
+    empty.classList.remove('hidden');
+    if (count) count.textContent = '';
+    return;
+  }
   empty.classList.add('hidden');
+  if (count) count.textContent = `${recipes.length} ${plural(recipes.length)}`;
 
   recipes.forEach(r => {
     const card = document.createElement('div');
@@ -104,6 +107,13 @@ function renderCards(recipes) {
     card.addEventListener('click', () => openModal(r));
     grid.appendChild(card);
   });
+}
+
+// ─── Plural helper ────────────────────────────────────────────────────
+function plural(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'рецепт';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'рецепта';
+  return 'рецептов';
 }
 
 // ─── Search ───────────────────────────────────────────────────────────
