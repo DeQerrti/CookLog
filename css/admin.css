@@ -1,0 +1,235 @@
+/* ─── Экран авторизации ──────────────────────────────── */
+.auth-screen {
+  min-height: calc(100dvh - 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.auth-icon { font-size: 36px; }
+
+.auth-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.auth-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+
+.auth-input {
+  width: 100%;
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  padding: 10px 18px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+  letter-spacing: .1em;
+  transition: border-color .18s;
+}
+
+.auth-input:focus { border-color: var(--accent); }
+
+.auth-error {
+  font-size: 13px;
+  color: #e07070;
+}
+
+/* ─── Кнопки ─────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent);
+  color: #1c1917;
+  border: none;
+  border-radius: var(--radius-chip);
+  padding: 9px 22px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .18s;
+  width: 100%;
+}
+
+.btn-primary:hover { background: #d4967a; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg-chip);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  padding: 9px 22px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+/* ─── Шапка админки ──────────────────────────────────── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.admin-actions { display: flex; gap: 10px; }
+.admin-actions .btn-primary { width: auto; }
+
+/* ─── Сетка формы ────────────────────────────────────── */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.admin-col { display: flex; flex-direction: column; gap: 24px; }
+
+/* ─── Поля формы ─────────────────────────────────────── */
+.field-group { display: flex; flex-direction: column; gap: 8px; }
+
+.field-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.field-row .field-group { flex: 1; }
+.field-row .field-group--sm { flex: 0 0 90px; }
+
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: .03em;
+}
+
+.field-hint { font-weight: 400; color: var(--text-dim); }
+
+.required { color: var(--accent); }
+
+.field-input,
+.field-select,
+.field-textarea {
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .18s;
+  width: 100%;
+}
+
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus { border-color: var(--accent); }
+
+.field-input::placeholder,
+.field-textarea::placeholder { color: var(--text-dim); }
+
+.field-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e5e50' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+.field-textarea { resize: vertical; line-height: 1.6; }
+
+/* ─── Превью картинки ────────────────────────────────── */
+.image-preview {
+  margin-top: 4px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.image-preview img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Эмодзи пикер ───────────────────────────────────── */
+.emoji-picker { display: flex; flex-direction: column; gap: 8px; }
+
+.field-emoji { font-size: 20px; text-align: center; width: 60px; }
+
+.emoji-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.emoji-opt {
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background .15s;
+  line-height: 1;
+}
+
+.emoji-opt:hover { background: var(--bg-chip); }
+
+/* ─── Превью карточки ────────────────────────────────── */
+.card-preview {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ─── Статус сохранения ──────────────────────────────── */
+.save-status {
+  margin-top: 24px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.save-status.success {
+  background: #1e3a1e;
+  color: #7ec87e;
+  border: 1px solid #2d5a2d;
+}
+
+.save-status.error {
+  background: #3a1e1e;
+  color: #e07070;
+  border: 1px solid #5a2d2d;
+}
+
+/* ─── Адаптив ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .admin-grid { grid-template-columns: 1fr; }
+  .admin-header { flex-direction: column; align-items: flex-start; }
+  .field-row { flex-direction: column; }
+  .field-row .field-group--sm { flex: 1; }
+}
