@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = '12179'; // поменяй на свой
 
 const EMOJIS = ['🍳','🥗','🍜','🥩','🍲','🥣','🍕','🥚','🥞','🍱','🥘','🍛','🍝','🥙','🌮','🫕','🍣','🫔','🍞','🧆'];
 
@@ -26,23 +25,44 @@ const getTypes   = () => lsGet('cl_types',   DEFAULT_TYPES);
 const getMethods = () => lsGet('cl_methods',  DEFAULT_METHODS);
 
 // ═══════════════════════════════════════════════════════════════════════
-//  SESSION AUTH
+//  AUTH — через Supabase (email + password)
 // ═══════════════════════════════════════════════════════════════════════
-if (sessionStorage.getItem('cl_auth') === '1') showAdmin();
+
+// Восстанавливаем сессию при перезагрузке страницы
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) showAdmin();
+});
 
 document.getElementById('auth-btn').addEventListener('click', tryAuth);
 document.getElementById('password-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') tryAuth();
 });
+document.getElementById('email-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('password-input').focus();
+});
 
-function tryAuth() {
-  if (document.getElementById('password-input').value === ADMIN_PASSWORD) {
-    sessionStorage.setItem('cl_auth', '1');
-    showAdmin();
-  } else {
-    document.getElementById('auth-error').classList.remove('hidden');
+async function tryAuth() {
+  const email    = document.getElementById('email-input').value.trim();
+  const password = document.getElementById('password-input').value;
+  const btn      = document.getElementById('auth-btn');
+  const errEl    = document.getElementById('auth-error');
+
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Входим…';
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false;
+  btn.textContent = 'Войти';
+
+  if (error) {
+    errEl.textContent = 'Неверный email или пароль';
+    errEl.classList.remove('hidden');
     document.getElementById('password-input').value = '';
     document.getElementById('password-input').focus();
+  } else {
+    showAdmin();
   }
 }
 
