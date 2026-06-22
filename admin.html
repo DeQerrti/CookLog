@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CookLog — Добавить рецепт</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🍲</span>
+        <span class="logo-text">CookLog</span>
+      </div>
+      <nav class="header-nav">
+        <a href="index.html" class="nav-link">← Все рецепты</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Экран пароля -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-icon">🔑</div>
+      <h2 class="auth-title">Вход</h2>
+      <p class="auth-subtitle">Эта страница только для тебя</p>
+      <input type="password" id="password-input" class="auth-input" placeholder="Пароль..." />
+      <button class="btn-primary" id="auth-btn">Войти</button>
+      <p class="auth-error hidden" id="auth-error">Неверный пароль</p>
+    </div>
+  </div>
+
+  <!-- Форма добавления рецепта -->
+  <main class="main hidden" id="admin-main">
+    <div class="admin-header">
+      <h1 class="admin-title">Новый рецепт</h1>
+      <div class="admin-actions">
+        <button class="btn-secondary" id="clear-btn">Очистить</button>
+        <button class="btn-primary" id="save-btn">Сохранить рецепт</button>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+
+      <!-- Левая колонка -->
+      <div class="admin-col">
+
+        <div class="field-group">
+          <label class="field-label">Название <span class="required">*</span></label>
+          <input type="text" id="f-title" class="field-input" placeholder="Например: Паста карбонара" />
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Приём пищи</label>
+            <select id="f-meal" class="field-select">
+              <option value="">— не указано —</option>
+              <option value="breakfast">Завтрак</option>
+              <option value="lunch">Обед</option>
+              <option value="dinner">Ужин</option>
+              <option value="snack">Перекус</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Способ готовки</label>
+            <select id="f-method" class="field-select">
+              <option value="">— не указано —</option>
+              <option value="fry">Жарка</option>
+              <option value="boil">Варка</option>
+              <option value="bake">Запекание</option>
+              <option value="raw">Без готовки</option>
+            </select>
+          </div>
+          <div class="field-group field-group--sm">
+            <label class="field-label">Время (мин)</label>
+            <input type="number" id="f-time" class="field-input" placeholder="30" min="1" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Ингредиенты <span class="field-hint">— по одному на строке</span></label>
+          <textarea id="f-ingredients" class="field-textarea" rows="7" placeholder="Паста — 200 г&#10;Яйца — 2 шт&#10;Бекон — 100 г&#10;Пармезан — 50 г"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Способ приготовления <span class="field-hint">— каждый шаг с новой строки</span></label>
+          <textarea id="f-steps" class="field-textarea" rows="8" placeholder="Отварить пасту до состояния аль денте.&#10;Обжарить бекон до хруста.&#10;Смешать яйца с тёртым пармезаном..."></textarea>
+        </div>
+
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="admin-col">
+
+        <div class="field-group">
+          <label class="field-label">Фото <span class="field-hint">— URL картинки (необязательно)</span></label>
+          <input type="url" id="f-image" class="field-input" placeholder="https://..." />
+          <div class="image-preview hidden" id="image-preview">
+            <img id="preview-img" src="" alt="Превью" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Эмодзи <span class="field-hint">— если нет фото</span></label>
+          <div class="emoji-picker">
+            <input type="text" id="f-emoji" class="field-input field-emoji" placeholder="🍽️" maxlength="2" />
+            <div class="emoji-suggestions">
+              <span class="emoji-opt" data-emoji="🍳">🍳</span>
+              <span class="emoji-opt" data-emoji="🥗">🥗</span>
+              <span class="emoji-opt" data-emoji="🍜">🍜</span>
+              <span class="emoji-opt" data-emoji="🥩">🥩</span>
+              <span class="emoji-opt" data-emoji="🍲">🍲</span>
+              <span class="emoji-opt" data-emoji="🥣">🥣</span>
+              <span class="emoji-opt" data-emoji="🍕">🍕</span>
+              <span class="emoji-opt" data-emoji="🥚">🥚</span>
+              <span class="emoji-opt" data-emoji="🥞">🥞</span>
+              <span class="emoji-opt" data-emoji="🍱">🍱</span>
+              <span class="emoji-opt" data-emoji="🥘">🥘</span>
+              <span class="emoji-opt" data-emoji="🍛">🍛</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Теги <span class="field-hint">— через запятую</span></label>
+          <input type="text" id="f-tags" class="field-input" placeholder="яйца, быстро, завтрак" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Источник <span class="field-hint">— если рецепт взят откуда-то</span></label>
+          <input type="text" id="f-source-label" class="field-input" placeholder="Название (напр. Рецепт с YouTube)" style="margin-bottom: 8px" />
+          <input type="url" id="f-source-url" class="field-input" placeholder="https://..." />
+        </div>
+
+        <!-- Превью карточки -->
+        <div class="field-group">
+          <label class="field-label">Превью карточки</label>
+          <div class="card-preview" id="card-preview">
+            <div class="card-image-placeholder" id="preview-placeholder">🍽️</div>
+            <div class="card-body">
+              <div class="card-meta" id="preview-meta"></div>
+              <div class="card-title" id="preview-title">Название рецепта</div>
+              <div class="card-tags" id="preview-tags"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="save-status hidden" id="save-status"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
