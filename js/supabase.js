@@ -1,7 +1,5 @@
-// Supabase подключение
-// Сюда вставишь свои данные после регистрации на supabase.com
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://krkuqamtppqttfnhxopp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_AEyt3613mjc1zUBg1jvdnA_lXzvXtKE';
 
-// Клиент — подключается через CDN в html когда будем настраивать Supabase
-// const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
