@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CookLog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🍲</span>
+        <span class="logo-text">CookLog</span>
+      </div>
+      <nav class="header-nav">
+        <a href="index.html" class="nav-link active">Рецепты</a>
+        <a href="admin.html" class="nav-link nav-admin">+ Добавить</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Фильтры -->
+    <section class="filters-section">
+      <div class="filters-row">
+        <div class="filter-group">
+          <span class="filter-label">Приём пищи</span>
+          <div class="filter-chips" id="meal-filters">
+            <button class="chip active" data-filter="meal" data-value="">Все</button>
+            <button class="chip" data-filter="meal" data-value="breakfast">Завтрак</button>
+            <button class="chip" data-filter="meal" data-value="lunch">Обед</button>
+            <button class="chip" data-filter="meal" data-value="dinner">Ужин</button>
+            <button class="chip" data-filter="meal" data-value="snack">Перекус</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Способ готовки</span>
+          <div class="filter-chips" id="method-filters">
+            <button class="chip active" data-filter="method" data-value="">Все</button>
+            <button class="chip" data-filter="method" data-value="fry">Жарка</button>
+            <button class="chip" data-filter="method" data-value="boil">Варка</button>
+            <button class="chip" data-filter="method" data-value="bake">Запекание</button>
+            <button class="chip" data-filter="method" data-value="raw">Без готовки</button>
+          </div>
+        </div>
+        <div class="filter-group filter-search">
+          <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или ингредиенту..." />
+        </div>
+      </div>
+    </section>
+
+    <!-- Лента рецептов -->
+    <section class="recipes-section">
+      <div class="recipes-grid" id="recipes-grid">
+        <!-- Карточки вставляются через JS -->
+      </div>
+      <div class="empty-state hidden" id="empty-state">
+        <span class="empty-icon">🍽️</span>
+        <p>Рецепты не найдены. Попробуй другие фильтры.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Модальное окно рецепта -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modal-close">✕</button>
+      <div class="modal-content" id="modal-content">
+        <!-- Заполняется через JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/recipes.js"></script>
+  <script src="js/modal.js"></script>
+</body>
+</html>
