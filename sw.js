@@ -1,16 +1,16 @@
-const CACHE_NAME = 'cooklog-v1';
+const CACHE_NAME = 'cooklog-v2';
 const STATIC_ASSETS = [
-  '/CookLog/index.html',
-  '/CookLog/admin.html',
-  '/CookLog/css/style.css',
-  '/CookLog/css/admin.css',
-  '/CookLog/js/supabase.js',
-  '/CookLog/js/recipes.js',
-  '/CookLog/js/modal.js',
-  '/CookLog/js/admin.js',
-  '/CookLog/manifest.json',
-  '/CookLog/icons/icon-192.png',
-  '/CookLog/icons/icon-512.png',
+  '/index.html',
+  '/admin.html',
+  '/css/style.css',
+  '/css/admin.css',
+  '/js/api.js',
+  '/js/recipes.js',
+  '/js/modal.js',
+  '/js/admin.js',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap'
 ];
 
@@ -38,9 +38,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET and Supabase API calls (always fresh)
+  // Skip non-GET and our own API calls (always fresh)
   if (event.request.method !== 'GET') return;
-  if (url.hostname.includes('supabase')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   // Fonts: cache-first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
@@ -71,7 +71,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Offline fallback for HTML pages
         if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/CookLog/index.html');
+          return caches.match('/index.html');
         }
       });
     })

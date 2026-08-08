@@ -25,24 +25,20 @@ const getTypes   = () => lsGet('cl_types',   DEFAULT_TYPES);
 const getMethods = () => lsGet('cl_methods',  DEFAULT_METHODS);
 
 // ═══════════════════════════════════════════════════════════════════════
-//  AUTH — через Supabase (email + password)
+//  AUTH — простой пароль администратора через наш /api/auth
 // ═══════════════════════════════════════════════════════════════════════
 
-// Восстанавливаем сессию при перезагрузке страницы
-db.auth.getSession().then(({ data: { session } }) => {
-  if (session) showAdmin();
+// Восстанавливаем сессию при перезагрузке страницы (проверяем cookie на сервере)
+api.auth.check().then(({ data }) => {
+  if (data && data.authed) showAdmin();
 });
 
 document.getElementById('auth-btn').addEventListener('click', tryAuth);
 document.getElementById('password-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') tryAuth();
 });
-document.getElementById('email-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('password-input').focus();
-});
 
 async function tryAuth() {
-  const email    = document.getElementById('email-input').value.trim();
   const password = document.getElementById('password-input').value;
   const btn      = document.getElementById('auth-btn');
   const errEl    = document.getElementById('auth-error');
@@ -51,13 +47,13 @@ async function tryAuth() {
   btn.disabled = true;
   btn.textContent = 'Входим…';
 
-  const { error } = await db.auth.signInWithPassword({ email, password });
+  const { error } = await api.auth.login(password);
 
   btn.disabled = false;
   btn.textContent = 'Войти';
 
   if (error) {
-    errEl.textContent = 'Неверный email или пароль';
+    errEl.textContent = 'Неверный пароль';
     errEl.classList.remove('hidden');
     document.getElementById('password-input').value = '';
     document.getElementById('password-input').focus();
@@ -82,7 +78,7 @@ async function loadRecipes() {
   const grid = document.getElementById('admin-recipes-grid');
   grid.innerHTML = '<div class="loading">Загружаем…</div>';
 
-  const { data, error } = await db.from('recipes').select('*').order('created_at', { ascending: false });
+  const { data, error } = await api.recipes.list();
   if (error) { grid.innerHTML = '<div class="loading">Ошибка загрузки :(</div>'; return; }
 
   allRecipes = data || [];
@@ -224,9 +220,9 @@ async function saveRecipe() {
 
   let error;
   if (editingId) {
-    ({ error } = await db.from('recipes').update(recipe).eq('id', editingId));
+    ({ error } = await api.recipes.update(editingId, recipe));
   } else {
-    ({ error } = await db.from('recipes').insert([recipe]));
+    ({ error } = await api.recipes.create(recipe));
   }
 
   btn.disabled = false;
@@ -234,7 +230,7 @@ async function saveRecipe() {
 
   if (error) {
     console.error(error);
-    showStatus('Ошибка: ' + error.message, 'error');
+    showStatus('Ошибка: ' + error, 'error');
   } else {
     showStatus(editingId ? '✓ Рецепт обновлён!' : '✓ Рецепт сохранён!', 'success');
     await loadRecipes();
@@ -252,8 +248,8 @@ document.getElementById('delete-btn').addEventListener('click', () => {
 async function deleteRecipe(id, fromForm = false) {
   if (!confirm('Удалить этот рецепт? Это действие нельзя отменить.')) return;
 
-  const { error } = await db.from('recipes').delete().eq('id', id);
-  if (error) { alert('Ошибка удаления: ' + error.message); return; }
+  const { error } = await api.recipes.remove(id);
+  if (error) { alert('Ошибка удаления: ' + error); return; }
 
   await loadRecipes();
   if (fromForm) cancelEdit();

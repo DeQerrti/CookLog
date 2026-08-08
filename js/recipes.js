@@ -7,7 +7,7 @@ async function loadRecipes() {
   const grid = document.getElementById('recipes-grid');
   grid.innerHTML = '<div class="loading">Загружаем рецепты…</div>';
 
-  const { data, error } = await db.from('recipes').select('*').order('created_at', { ascending: false });
+  const { data, error } = await api.recipes.list();
   if (error) { grid.innerHTML = '<div class="loading">Ошибка загрузки. Обнови страницу.</div>'; return; }
 
   allRecipes = data || [];
