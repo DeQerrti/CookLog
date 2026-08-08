@@ -5,4 +5,4 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "cooklog-db"
-database_id = "ВСТАВЬ_СЮДА_database_id_ПОСЛЕ_wrangler_d1_create"
+database_id = "715fb9ec-c71a-4c1b-abdb-91596f09d9a1"
