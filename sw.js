@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cooklog-v2';
+const CACHE_NAME = 'cooklog-v3';
 const STATIC_ASSETS = [
   '/index.html',
   '/admin.html',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(event.request).then((cached) => {
           if (cached) return cached;
-          return fetch(event.request).then((response) => {
+          return fetch(event.request).then((response) => stripRedirectFlag(response)).then((response) => {
             cache.put(event.request, response.clone());
             return response;
           });
@@ -62,7 +62,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request).then((response) => {
+      return fetch(event.request).then((response) => stripRedirectFlag(response)).then((response) => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
@@ -77,3 +77,17 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// Chrome refuses to respondWith() a Response whose `redirected` flag is true
+// for navigation requests (throws "a redirected response was used for a
+// request whose redirect mode is not 'follow'"). Cloudflare Pages can issue
+// an internal redirect (e.g. HTTPS/host canonicalisation) even for same-URL
+// requests, so we defensively rebuild the Response to strip that flag.
+function stripRedirectFlag(response) {
+  if (!response.redirected) return response;
+  return response.blob().then((body) => new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  }));
+}
