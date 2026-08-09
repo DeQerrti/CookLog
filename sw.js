@@ -1,7 +1,5 @@
-const CACHE_NAME = 'cooklog-v3';
+const CACHE_NAME = 'cooklog-v4';
 const STATIC_ASSETS = [
-  '/index.html',
-  '/admin.html',
   '/css/style.css',
   '/css/admin.css',
   '/js/api.js',
@@ -42,6 +40,15 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
 
+  // Never intercept page navigations (typing a URL, clicking a link, etc).
+  // Cloudflare Pages can 308-redirect e.g. "/admin.html" -> "/admin", and
+  // Chrome refuses to respondWith() a Response whose `redirected` flag is
+  // true for navigation-mode requests ("a redirected response was used for
+  // a request whose redirect mode is not 'follow'"). Letting the browser
+  // handle navigations natively avoids that failure mode entirely; we only
+  // add value by caching the static sub-resources below.
+  if (event.request.mode === 'navigate') return;
+
   // Fonts: cache-first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     event.respondWith(
@@ -68,12 +75,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => {
-        // Offline fallback for HTML pages
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
-        }
-      });
+      }).catch(() => undefined);
     })
   );
 });
