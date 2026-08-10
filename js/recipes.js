@@ -1,8 +1,9 @@
 // ─── State ────────────────────────────────────────────────────────────
-const filters  = { type: '', method: '', search: '' };
+const filters  = { types: new Set(), methods: new Set(), ingredients: new Set(), search: '' };
 let allRecipes = [];
+let allIngredients = [];
 
-// ─── Supabase load ────────────────────────────────────────────────────
+// ─── Load ─────────────────────────────────────────────────────────────
 async function loadRecipes() {
   const grid = document.getElementById('recipes-grid');
   grid.innerHTML = '<div class="loading">Загружаем рецепты…</div>';
@@ -12,6 +13,7 @@ async function loadRecipes() {
 
   allRecipes = data || [];
   buildDynamicFilters();
+  buildIngredientsList();
   applyFilters();
 }
 
@@ -20,8 +22,8 @@ function buildDynamicFilters() {
   const types   = [...new Set(allRecipes.map(r => r.type   || r.meal   || '').filter(Boolean))].sort();
   const methods = [...new Set(allRecipes.map(r => r.method || '').filter(Boolean))].sort();
 
-  buildChips('type-chips',   'type',   types);
-  buildChips('method-chips', 'method', methods);
+  buildChips('type-chips',   'types',   types);
+  buildChips('method-chips', 'methods', methods);
 }
 
 function buildChips(containerId, filterKey, values) {
@@ -35,25 +37,122 @@ function buildChips(containerId, filterKey, values) {
     btn.textContent    = val;
     el.appendChild(btn);
   });
+
   el.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      el.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      filters[filterKey] = chip.dataset.value;
+      const value = chip.dataset.value;
+      const set   = filters[filterKey];
+
+      if (value === '') {
+        // "Все" — сбрасывает выбор в этой категории
+        set.clear();
+      } else {
+        if (set.has(value)) set.delete(value);
+        else set.add(value);
+      }
+
+      // Пересчитываем активные чипы по актуальному состоянию set
+      el.querySelectorAll('.chip').forEach(c => {
+        const isAll = c.dataset.value === '';
+        c.classList.toggle('active', isAll ? set.size === 0 : set.has(c.dataset.value));
+      });
+
       applyFilters();
     });
   });
 }
 
+// ─── Ingredients panel ─────────────────────────────────────────────────
+function buildIngredientsList() {
+  const counts = new Map();
+  allRecipes.forEach(r => (r.ingredients || []).forEach(raw => {
+    const name = normalizeIngredient(raw);
+    if (!name) return;
+    counts.set(name, (counts.get(name) || 0) + 1);
+  }));
+  allIngredients = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru'));
+  renderIngredientsList(allIngredients);
+}
+
+// Отрезаем количество/единицы измерения от начала строки ингредиента,
+// чтобы "3 яйца" и "яйцо - 2шт" схлопывались в один пункт "яйцо"/"яйца".
+function normalizeIngredient(raw) {
+  if (!raw) return '';
+  let s = String(raw).split(/[—\-:,]/)[0].trim();
+  s = s.replace(/^\d+([.,]\d+)?\s*/, '').trim();
+  return s.toLowerCase();
+}
+
+function renderIngredientsList(list) {
+  const el = document.getElementById('ingredients-filter-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="ingredients-empty">Ничего не найдено</div>';
+    return;
+  }
+  el.innerHTML = list.map(([name]) => `
+    <label class="ingredient-row">
+      <input type="checkbox" value="${name}" ${filters.ingredients.has(name) ? 'checked' : ''} />
+      <span>${name}</span>
+    </label>
+  `).join('');
+
+  el.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) filters.ingredients.add(cb.value);
+      else filters.ingredients.delete(cb.value);
+      updateIngredientsToggleLabel();
+    });
+  });
+}
+
+function updateIngredientsToggleLabel() {
+  const label = document.getElementById('ingredients-toggle-label');
+  const n = filters.ingredients.size;
+  label.textContent = n === 0 ? 'Все' : `Выбрано: ${n}`;
+  document.getElementById('ingredients-toggle').classList.toggle('active', n > 0);
+}
+
+const ingredientsOverlay = document.getElementById('ingredients-overlay');
+document.getElementById('ingredients-toggle').addEventListener('click', () => {
+  renderIngredientsList(allIngredients);
+  ingredientsOverlay.classList.remove('hidden');
+});
+document.getElementById('ingredients-close').addEventListener('click', () => ingredientsOverlay.classList.add('hidden'));
+ingredientsOverlay.addEventListener('click', (e) => { if (e.target === ingredientsOverlay) ingredientsOverlay.classList.add('hidden'); });
+
+document.getElementById('ingredients-search').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  renderIngredientsList(q ? allIngredients.filter(([name]) => name.includes(q)) : allIngredients);
+});
+
+document.getElementById('ingredients-clear').addEventListener('click', () => {
+  filters.ingredients.clear();
+  updateIngredientsToggleLabel();
+  renderIngredientsList(allIngredients);
+  applyFilters();
+});
+
+document.getElementById('ingredients-apply').addEventListener('click', () => {
+  updateIngredientsToggleLabel();
+  ingredientsOverlay.classList.add('hidden');
+  applyFilters();
+});
+
 // ─── Filter + render ──────────────────────────────────────────────────
 function applyFilters() {
   let result = [...allRecipes];
 
-  if (filters.type) {
-    result = result.filter(r => (r.type || r.meal || '') === filters.type);
+  if (filters.types.size) {
+    result = result.filter(r => filters.types.has(r.type || r.meal || ''));
   }
-  if (filters.method) {
-    result = result.filter(r => (r.method || '') === filters.method);
+  if (filters.methods.size) {
+    result = result.filter(r => filters.methods.has(r.method || ''));
+  }
+  if (filters.ingredients.size) {
+    result = result.filter(r => {
+      const owned = new Set((r.ingredients || []).map(normalizeIngredient));
+      return [...filters.ingredients].every(need => owned.has(need));
+    });
   }
   if (filters.search) {
     const q = filters.search.toLowerCase();
@@ -120,6 +219,26 @@ function plural(n) {
 document.getElementById('search-input').addEventListener('input', e => {
   filters.search = e.target.value.trim();
   applyFilters();
+});
+
+// ─── "Что приготовить?" — случайный рецепт из текущей выборки ─────────
+document.getElementById('random-btn').addEventListener('click', () => {
+  let pool = [...allRecipes];
+
+  if (filters.types.size) pool = pool.filter(r => filters.types.has(r.type || r.meal || ''));
+  if (filters.methods.size) pool = pool.filter(r => filters.methods.has(r.method || ''));
+  if (filters.ingredients.size) {
+    pool = pool.filter(r => {
+      const owned = new Set((r.ingredients || []).map(normalizeIngredient));
+      return [...filters.ingredients].every(need => owned.has(need));
+    });
+  }
+
+  if (!pool.length) pool = allRecipes;
+  if (!pool.length) return;
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  openModal(pick);
 });
 
 // ─── Start ────────────────────────────────────────────────────────────
