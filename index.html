@@ -47,6 +47,12 @@
           <button class="chip active" data-filter="method" data-value="">Все</button>
         </div>
       </div>
+      <div class="filter-group">
+        <span class="filter-label">Ингредиенты</span>
+        <button class="chip chip-ingredients-toggle" id="ingredients-toggle">
+          <span id="ingredients-toggle-label">Все</span> <span class="chip-caret">▾</span>
+        </button>
+      </div>
       <div class="filter-group filter-search">
         <span class="filter-label">Поиск</span>
         <input type="text" id="search-input" class="search-input" placeholder="Название, ингредиент или тег…" />
@@ -54,7 +60,10 @@
     </div>
   </section>
 
-  <div class="recipes-count" id="recipes-count"></div>
+  <div class="toolbar-row">
+    <div class="recipes-count" id="recipes-count"></div>
+    <button class="btn-random" id="random-btn">🎲 Что приготовить?</button>
+  </div>
 
   <section class="recipes-section">
     <div class="recipes-grid" id="recipes-grid"></div>
@@ -64,6 +73,22 @@
     </div>
   </section>
 </main>
+
+<div class="modal-overlay hidden" id="ingredients-overlay">
+  <div class="modal modal-ingredients" id="ingredients-modal">
+    <button class="modal-close" id="ingredients-close">✕</button>
+    <div class="modal-content">
+      <h3 class="ingredients-title">Ингредиенты</h3>
+      <p class="ingredients-hint">Покажем рецепты, где есть все выбранные</p>
+      <input type="text" id="ingredients-search" class="search-input ingredients-search" placeholder="Найти ингредиент…" />
+      <div class="ingredients-filter-list" id="ingredients-filter-list"></div>
+      <div class="ingredients-actions">
+        <button class="btn-text" id="ingredients-clear">Сбросить всё</button>
+        <button class="btn-primary-small" id="ingredients-apply">Показать рецепты</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay hidden" id="modal-overlay">
   <div class="modal" id="modal">
