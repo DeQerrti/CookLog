@@ -572,3 +572,150 @@ function showStatus(msg, type) {
 //  INIT PREVIEW
 // ═══════════════════════════════════════════════════════════════════════
 updatePreview();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ИМПОРТ РЕЦЕПТА ПО ССЫЛКЕ / ТЕКСТУ
+// ═══════════════════════════════════════════════════════════════════════
+
+const importOverlay = document.getElementById('import-overlay');
+const importBtn     = document.getElementById('import-open-btn');
+const importClose   = document.getElementById('import-close');
+
+if (importBtn) {
+  importBtn.addEventListener('click', () => {
+    importOverlay.classList.remove('hidden');
+  });
+}
+
+if (importClose) {
+  importClose.addEventListener('click', () => importOverlay.classList.add('hidden'));
+}
+
+if (importOverlay) {
+  importOverlay.addEventListener('click', e => {
+    if (e.target === importOverlay) importOverlay.classList.add('hidden');
+  });
+}
+
+const importSubmitBtn = document.getElementById('import-submit-btn');
+if (importSubmitBtn) {
+  importSubmitBtn.addEventListener('click', async () => {
+    const url  = (document.getElementById('import-url')?.value  || '').trim();
+    const text = (document.getElementById('import-text')?.value || '').trim();
+
+    if (!url && !text) {
+      alert('Вставь ссылку или текст рецепта');
+      return;
+    }
+
+    importSubmitBtn.disabled = true;
+    importSubmitBtn.textContent = '⏳ Разбираю…';
+
+    const { data, error } = await api.recipes.import({ url, text });
+
+    importSubmitBtn.disabled = false;
+    importSubmitBtn.textContent = 'Разобрать рецепт';
+
+    if (error || !data?.recipe) {
+      alert('Ошибка: ' + (error || 'нет данных'));
+      return;
+    }
+
+    // Закрываем модалку импорта, заполняем форму
+    importOverlay.classList.add('hidden');
+
+    const r = data.recipe;
+    editingId = null;
+
+    document.getElementById('f-title').value        = r.title         || '';
+    document.getElementById('f-time').value         = r.time_minutes  || '';
+    document.getElementById('f-source-label').value = r.source_label  || '';
+    document.getElementById('f-source-url').value   = r.source_url    || url || '';
+    document.getElementById('f-image').value        = r.image_url     || '';
+    document.getElementById('f-emoji').value        = r.emoji         || '';
+    document.getElementById('f-ingredients').value  = (r.ingredients  || []).join('\n');
+    document.getElementById('f-steps').value        = (r.steps        || []).join('\n');
+
+    populateCategorySelects();
+    setTimeout(() => {
+      document.getElementById('f-type').value   = r.type   || '';
+      document.getElementById('f-method').value = r.method || '';
+    }, 0);
+
+    currentTags = [...(r.tags || [])];
+    autoTags = [];
+    renderTagChips();
+    updatePreview();
+    triggerImagePreview(r.image_url || '');
+
+    document.getElementById('form-title').textContent       = 'Импортированный рецепт — проверь и сохрани';
+    document.getElementById('delete-btn').style.display     = 'none';
+    document.getElementById('header-mode-label').textContent = r.title;
+    showFormSection();
+
+    showStatus('✓ Рецепт разобран — проверь данные и сохрани', 'success');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ЗАГРУЗКА ФОТО ЧЕРЕЗ GITHUB API
+// ═══════════════════════════════════════════════════════════════════════
+
+const photoInput  = document.getElementById('photo-file-input');
+const photoBtn    = document.getElementById('photo-upload-btn');
+const photoStatus = document.getElementById('photo-upload-status');
+
+if (photoBtn && photoInput) {
+  photoBtn.addEventListener('click', () => photoInput.click());
+
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+
+    // Сжимаем на клиенте через Canvas перед отправкой
+    const compressed = await compressImage(file, 1600, 0.82);
+
+    photoBtn.disabled = true;
+    photoBtn.textContent = '⏳ Загружаем…';
+    if (photoStatus) photoStatus.textContent = '';
+
+    const { data, error } = await api.uploadImage(compressed);
+
+    photoBtn.disabled = false;
+    photoBtn.textContent = '📷 Загрузить фото';
+    photoInput.value = '';
+
+    if (error) {
+      if (photoStatus) { photoStatus.textContent = '✗ ' + error; photoStatus.className = 'photo-status error'; }
+      return;
+    }
+
+    // Подставляем URL в поле формы
+    document.getElementById('f-image').value = data.url;
+    triggerImagePreview(data.url);
+    if (photoStatus) { photoStatus.textContent = '✓ Фото загружено'; photoStatus.className = 'photo-status success'; }
+    showStatus('✓ Фото загружено в репозиторий', 'success');
+  });
+}
+
+// Сжатие через Canvas (работает в браузере)
+async function compressImage(file, maxSize = 1600, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+        else                { width  = Math.round(width  * maxSize / height); height = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
