@@ -66,5 +66,12 @@ export async function onRequestPost({ request, env }) {
     'https://cdn.jsdelivr.net/gh/'
   ).replace(`/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/`, `/${env.GITHUB_OWNER}/${env.GITHUB_REPO}@main/`);
 
+  // jsDelivr не знает о только что закоммиченном файле, пока его не попросят
+  // обновить кэш — без этого свежая картинка может не открываться некоторое время.
+  // Просим jsDelivr сразу подтянуть новый файл (не блокируем ответ пользователю при ошибке).
+  try {
+    await fetch(`https://purge.jsdelivr.net/gh/${env.GITHUB_OWNER}/${env.GITHUB_REPO}@main/${path}`);
+  } catch { /* не критично -- файл всё равно станет доступен по jsDelivr со временем */ }
+
   return jsonResponse({ url: cdnUrl || rawUrl, path });
 }
