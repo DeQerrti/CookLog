@@ -363,8 +363,7 @@ body {
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 600;
-
-line-height: 1.25;
+  line-height: 1.25;
   margin-bottom: 16px;
 }
 
@@ -604,6 +603,7 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted, #9e9483);
 }
+
 /* ─── Toolbar (счётчик + "что приготовить") ─────────────── */
 .toolbar-row {
   display: flex;
