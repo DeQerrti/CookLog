@@ -1,4 +1,4 @@
-import { jsonResponse, verifyAuth } from './api/_utils.js';
+import { jsonResponse, verifyAuth } from './_utils.js';
 
 // POST /api/upload-image
 // multipart/form-data: file (image), filename (optional)
