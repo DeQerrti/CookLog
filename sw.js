@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cooklog-v4';
+const CACHE_NAME = 'cooklog-v5';
 const STATIC_ASSETS = [
   '/css/style.css',
   '/css/admin.css',
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: cache-first for static, network-first for API
+// Fetch: network-first for static, always-fresh for API
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -49,7 +49,8 @@ self.addEventListener('fetch', (event) => {
   // add value by caching the static sub-resources below.
   if (event.request.mode === 'navigate') return;
 
-  // Fonts: cache-first
+  // Fonts: cache-first (Google Fonts URLs are effectively immutable, so
+  // stale content is not a concern here — unlike our own CSS/JS below).
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -65,18 +66,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first, fallback to network
+  // Static assets: network-first, cache is only an offline fallback.
+  // (Cache-first used to serve stale CSS/JS after every deploy until the
+  // user did a hard-refresh — network-first fixes that permanently.)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => stripRedirectFlag(response)).then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => undefined);
-    })
+    fetch(event.request).then((response) => stripRedirectFlag(response)).then((response) => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
 
