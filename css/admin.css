@@ -375,3 +375,18 @@
   background: #3a2e28; border-radius: 4px;
   padding: 1px 5px;
 }
+
+/* ─── Кнопка загрузки фото ──────────────────── */
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-chip, 20px);
+}
+
+.photo-status {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.photo-status.success { color: var(--green, #7a9e6e); }
+.photo-status.error   { color: #e57373; }
