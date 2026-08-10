@@ -27,6 +27,10 @@
     </div>
     <nav class="header-nav">
       <a href="index.html" class="nav-link active">Рецепты</a>
+      <button class="nav-link nav-link-shopping" id="shopping-nav-btn">
+        🛒 Список
+        <span class="shopping-badge" id="shopping-badge">0</span>
+      </button>
       <a href="admin.html" class="nav-link nav-admin">+ Добавить</a>
     </nav>
   </div>
@@ -74,6 +78,7 @@
   </section>
 </main>
 
+<!-- ─── Фильтр ингредиентов ─────────────────────────────── -->
 <div class="modal-overlay hidden" id="ingredients-overlay">
   <div class="modal modal-ingredients" id="ingredients-modal">
     <button class="modal-close" id="ingredients-close">✕</button>
@@ -90,6 +95,7 @@
   </div>
 </div>
 
+<!-- ─── Модалка рецепта ─────────────────────────────────── -->
 <div class="modal-overlay hidden" id="modal-overlay">
   <div class="modal" id="modal">
     <button class="modal-close" id="modal-close">✕</button>
@@ -97,6 +103,41 @@
   </div>
 </div>
 
+<!-- ─── Список покупок ─────────────────────────────────── -->
+<div class="modal-overlay hidden" id="shopping-overlay">
+  <div class="modal modal-shopping">
+    <button class="modal-close" id="shopping-close">✕</button>
+    <div class="modal-content">
+      <div class="shopping-header-row">
+        <h3 class="shopping-modal-title">🛒 Список покупок</h3>
+        <button class="shopping-clear-btn" id="shopping-clear-btn">Очистить всё</button>
+      </div>
+      <p class="shopping-hint">Добавляй рецепты через кнопку в карточке</p>
+      <div id="shopping-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Режим готовки ──────────────────────────────────── -->
+<div id="cooking-overlay" class="hidden">
+  <div class="cooking-header">
+    <div class="cooking-title"></div>
+    <button class="cooking-close" id="cooking-close">✕</button>
+  </div>
+  <div class="cooking-progress-wrap">
+    <div class="cooking-progress-bar">
+      <div class="cooking-progress-fill" style="width:0%"></div>
+    </div>
+    <div class="cooking-step-counter"></div>
+  </div>
+  <div class="cooking-body" id="cooking-body"></div>
+  <div class="cooking-nav">
+    <button class="btn-cook-prev" id="cook-prev" disabled>← Назад</button>
+    <button class="btn-cook-next" id="cook-next">Дальше →</button>
+  </div>
+</div>
+
+<!-- ─── PWA banner ────────────────────────────────────── -->
 <div class="pwa-banner hidden" id="pwa-banner">
   <span class="pwa-banner-icon">📱</span>
   <span class="pwa-banner-text">Установить CookLog на экран</span>
@@ -106,6 +147,8 @@
 
 <script src="js/api.js"></script>
 <script src="js/recipes.js"></script>
+<script src="js/cooking.js"></script>
+<script src="js/shopping.js"></script>
 <script src="js/modal.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
