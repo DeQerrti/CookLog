@@ -955,6 +955,16 @@ body {
 /* кнопка в навигации */
 .nav-link-shopping {
   position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .shopping-badge {
