@@ -72,6 +72,25 @@ async function showAdmin() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  ЭКСПОРТ БЭКАПА
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('export-btn').addEventListener('click', () => {
+  if (!allRecipes.length) { showStatus('Рецептов пока нет — нечего экспортировать', 'error'); return; }
+
+  const blob = new Blob([JSON.stringify(allRecipes, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const date = new Date().toISOString().slice(0, 10);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cooklog-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 //  LOAD ALL RECIPES
 // ═══════════════════════════════════════════════════════════════════════
 async function loadRecipes() {
@@ -308,24 +327,30 @@ function fillSelect(id, items) {
 // ═══════════════════════════════════════════════════════════════════════
 //  CATEGORY MODAL
 // ═══════════════════════════════════════════════════════════════════════
+const catModalEl = document.getElementById('cat-modal');
+let releaseCatModalFocus = null;
+
 document.querySelectorAll('.btn-manage').forEach(btn => {
   btn.addEventListener('click', () => {
     catGroup = btn.dataset.group;
     document.getElementById('cat-modal-title').textContent =
       catGroup === 'type' ? 'Типы блюда' : 'Способы готовки';
     renderCatList();
-    document.getElementById('cat-modal').classList.remove('hidden');
+    catModalEl.classList.remove('hidden');
+    releaseCatModalFocus = window.trapFocus?.(catModalEl, closeCatModal);
   });
 });
 
 document.getElementById('cat-close-btn').addEventListener('click', closeCatModal);
-document.getElementById('cat-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('cat-modal')) closeCatModal();
+catModalEl.addEventListener('click', e => {
+  if (e.target === catModalEl) closeCatModal();
 });
 
 function closeCatModal() {
-  document.getElementById('cat-modal').classList.add('hidden');
+  catModalEl.classList.add('hidden');
   populateCategorySelects();
+  releaseCatModalFocus?.();
+  releaseCatModalFocus = null;
 }
 
 function renderCatList() {
@@ -580,20 +605,28 @@ updatePreview();
 const importOverlay = document.getElementById('import-overlay');
 const importBtn     = document.getElementById('import-open-btn');
 const importClose   = document.getElementById('import-close');
+let releaseImportFocus = null;
+
+function closeImportOverlay() {
+  importOverlay.classList.add('hidden');
+  releaseImportFocus?.();
+  releaseImportFocus = null;
+}
 
 if (importBtn) {
   importBtn.addEventListener('click', () => {
     importOverlay.classList.remove('hidden');
+    releaseImportFocus = window.trapFocus?.(importOverlay, closeImportOverlay);
   });
 }
 
 if (importClose) {
-  importClose.addEventListener('click', () => importOverlay.classList.add('hidden'));
+  importClose.addEventListener('click', closeImportOverlay);
 }
 
 if (importOverlay) {
   importOverlay.addEventListener('click', e => {
-    if (e.target === importOverlay) importOverlay.classList.add('hidden');
+    if (e.target === importOverlay) closeImportOverlay();
   });
 }
 
@@ -622,7 +655,7 @@ if (importSubmitBtn) {
     }
 
     // Закрываем модалку импорта, заполняем форму
-    importOverlay.classList.add('hidden');
+    closeImportOverlay();
 
     const r = data.recipe;
     editingId = null;
@@ -653,6 +686,74 @@ if (importSubmitBtn) {
     document.getElementById('header-mode-label').textContent = r.title;
     showFormSection();
 
-    showStatus('✓ Рецепт разобран — проверь данные и сохрани', 'success');
+    showStatus(
+      data.fetch_note
+        ? `✓ Рецепт разобран (${data.fetch_note.toLowerCase()}) — проверь данные`
+        : '✓ Рецепт разобран — проверь данные и сохрани',
+      'success'
+    );
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ЗАГРУЗКА ФОТО ЧЕРЕЗ GITHUB API
+// ═══════════════════════════════════════════════════════════════════════
+
+const photoInput  = document.getElementById('photo-file-input');
+const photoBtn    = document.getElementById('photo-upload-btn');
+const photoStatus = document.getElementById('photo-upload-status');
+
+if (photoBtn && photoInput) {
+  photoBtn.addEventListener('click', () => photoInput.click());
+
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+
+    // Сжимаем на клиенте через Canvas перед отправкой
+    const compressed = await compressImage(file, 1600, 0.82);
+
+    photoBtn.disabled = true;
+    photoBtn.textContent = '⏳ Загружаем…';
+    if (photoStatus) photoStatus.textContent = '';
+
+    const { data, error } = await api.uploadImage(compressed);
+
+    photoBtn.disabled = false;
+    photoBtn.textContent = '📷 Загрузить фото';
+    photoInput.value = '';
+
+    if (error) {
+      if (photoStatus) { photoStatus.textContent = '✗ ' + error; photoStatus.className = 'photo-status error'; }
+      return;
+    }
+
+    // Подставляем URL в поле формы
+    document.getElementById('f-image').value = data.url;
+    triggerImagePreview(data.url);
+    if (photoStatus) { photoStatus.textContent = '✓ Фото загружено'; photoStatus.className = 'photo-status success'; }
+    showStatus('✓ Фото загружено в репозиторий', 'success');
+  });
+}
+
+// Сжатие через Canvas (работает в браузере)
+async function compressImage(file, maxSize = 1600, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+        else                { width  = Math.round(width  * maxSize / height); height = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
   });
 }
