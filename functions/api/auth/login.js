@@ -1,4 +1,4 @@
-import { jsonResponse, sign } from '../_utils.js';
+import { jsonResponse, sign, timingSafeEqual } from '../_utils.js';
 
 const THIRTY_DAYS_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -12,8 +12,7 @@ export async function onRequestPost({ request, env }) {
 
   const password = body.password || '';
 
-  // Простое сравнение достаточно для личного pet-проекта с одним админом.
-  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
+  if (!env.ADMIN_PASSWORD || !timingSafeEqual(password, env.ADMIN_PASSWORD)) {
     return jsonResponse({ error: 'Неверный пароль' }, 401);
   }
 
