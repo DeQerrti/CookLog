@@ -2,7 +2,12 @@ import { jsonResponse, verifyAuth } from '../_utils.js';
 
 // POST /api/recipes/import
 // body: { url, text }
-// Парсит текст рецепта без внешних API — полностью бесплатно
+// Парсит текст рецепта без внешних платных API — полностью бесплатно.
+// Если дана ссылка — сначала пробуем реально её открыть и достать данные:
+//  1) структурированную разметку schema.org/Recipe (есть на большинстве кулинарных сайтов)
+//  2) meta description / og:description (работает для YouTube/Instagram/TikTok,
+//     где рецепт обычно в подписи под видео)
+// Если ничего не нашли — используем то, что человек вставил вручную сам.
 export async function onRequestPost({ request, env }) {
   const authed = await verifyAuth(request, env);
   if (!authed) return jsonResponse({ error: 'Unauthorized' }, 401);
@@ -18,12 +23,240 @@ export async function onRequestPost({ request, env }) {
     return jsonResponse({ error: 'Нужен текст или ссылка' }, 400);
   }
 
-  const recipe = parseRecipeText(text, url);
-  return jsonResponse({ recipe });
+  let fetchNote     = null;
+  let jsonLdRecipe  = null;
+  let fetchedText   = '';
+
+  if (url) {
+    const page = await fetchPageData(url);
+    if (page.error) {
+      fetchNote = page.error;
+    } else {
+      jsonLdRecipe = findRecipeJsonLd(page.jsonLdBlocks);
+      fetchedText  = page.meta.description || page.meta.ogDescription || '';
+    }
+  }
+
+  let recipe;
+
+  if (jsonLdRecipe) {
+    // Нашли структурированные данные рецепта — это самый надёжный источник
+    recipe = recipeFromJsonLd(jsonLdRecipe, url);
+    // Если в разметке почему-то не оказалось ингредиентов/шагов — подстрахуемся
+    // тем, что человек вставил вручную
+    if (!recipe.ingredients.length && !recipe.steps.length && text) {
+      const fallback = parseRecipeText(text, url);
+      recipe.ingredients = fallback.ingredients;
+      recipe.steps = fallback.steps;
+      if (!recipe.time_minutes) recipe.time_minutes = fallback.time_minutes;
+    }
+  } else {
+    const combinedText = [text, fetchedText].filter(Boolean).join('\n\n');
+    if (!combinedText) {
+      return jsonResponse({
+        error: fetchNote
+          ? `${fetchNote}. Вставь текст рецепта вручную.`
+          : 'Не нашёл рецепт по ссылке (нет разметки и описания) — вставь текст вручную.',
+      }, 422);
+    }
+    recipe = parseRecipeText(combinedText, url);
+  }
+
+  return jsonResponse({ recipe, fetch_note: fetchNote });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  ПАРСЕР РЕЦЕПТОВ
+//  ЗАГРУЗКА СТРАНИЦЫ ПО ССЫЛКЕ
+// ═══════════════════════════════════════════════════════════════════════
+
+async function fetchPageData(url) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+    if (!/^https?:$/.test(parsed.protocol)) throw new Error('bad protocol');
+  } catch {
+    return { error: 'Некорректная ссылка' };
+  }
+
+  let resp;
+  try {
+    resp = await fetch(parsed.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CookLogBot/1.0)',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+    });
+  } catch {
+    return { error: 'Не удалось открыть ссылку' };
+  }
+
+  if (!resp.ok) return { error: `Сайт ответил ошибкой ${resp.status}` };
+
+  const contentType = resp.headers.get('content-type') || '';
+  if (!contentType.includes('html')) return { error: 'По ссылке не HTML-страница' };
+
+  const jsonLdBlocks = [];
+  const meta = {};
+
+  class JsonLdCollector {
+    constructor() { this.buf = ''; }
+    text(chunk) {
+      this.buf += chunk.text;
+      if (chunk.lastInTextNode) {
+        if (this.buf.trim()) jsonLdBlocks.push(this.buf);
+        this.buf = '';
+      }
+    }
+  }
+
+  class MetaCollector {
+    element(el) {
+      const key = (el.getAttribute('name') || el.getAttribute('property') || '').toLowerCase();
+      const content = el.getAttribute('content');
+      if (!key || !content) return;
+      if (key === 'description')    meta.description = content;
+      if (key === 'og:description') meta.ogDescription = content;
+    }
+  }
+
+  try {
+    // Прогоняем поток страницы через HTMLRewriter — .text() в конце
+    // заставляет его реально дойти до конца и вызвать обработчики выше
+    await new HTMLRewriter()
+      .on('script[type="application/ld+json"]', new JsonLdCollector())
+      .on('meta', new MetaCollector())
+      .transform(resp)
+      .text();
+  } catch {
+    return { error: 'Не удалось разобрать страницу' };
+  }
+
+  return { jsonLdBlocks, meta };
+}
+
+// ─── Ищем объект Recipe в JSON-LD блоках ─────────────────────────────
+function findRecipeJsonLd(blocks) {
+  for (const block of blocks) {
+    let data;
+    try { data = JSON.parse(block); } catch { continue; }
+    const found = searchForRecipe(data);
+    if (found) return found;
+  }
+  return null;
+}
+
+function searchForRecipe(node) {
+  if (!node || typeof node !== 'object') return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = searchForRecipe(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']];
+  if (types.some(t => typeof t === 'string' && t.toLowerCase() === 'recipe')) return node;
+  if (node['@graph']) return searchForRecipe(node['@graph']);
+  return null;
+}
+
+// ─── Строим рецепт из объекта schema.org/Recipe ──────────────────────
+function recipeFromJsonLd(obj, sourceUrl) {
+  const title = cleanText(obj.name) || 'Рецепт';
+
+  const ingredients = toArray(obj.recipeIngredient || obj.ingredients)
+    .map(cleanText)
+    .filter(Boolean);
+
+  const steps = extractInstructions(obj.recipeInstructions);
+
+  const time_minutes =
+    durationToMinutes(obj.totalTime) ||
+    durationToMinutes(obj.cookTime)  ||
+    durationToMinutes(obj.prepTime)  ||
+    extractTime(title + ' ' + steps.join(' ')) ||
+    null;
+
+  const image_url = extractImage(obj.image);
+
+  const bagOfText = title + ' ' + ingredients.join(' ') + ' ' + steps.join(' ');
+  const type   = guessType(bagOfText, title);
+  const method = guessMethod(bagOfText, steps.join(' '));
+  const tags   = extractTags(ingredients, title);
+  const emoji  = guessEmoji(type, title);
+
+  return {
+    title, type, method, time_minutes,
+    ingredients, steps, tags, emoji,
+    image_url,
+    source_label: sourceUrl ? domainLabel(sourceUrl) : null,
+    source_url: sourceUrl || null,
+  };
+}
+
+function toArray(v) {
+  if (!v) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+function cleanText(s) {
+  if (!s) return '';
+  return String(s).replace(/\s+/g, ' ').trim();
+}
+
+// recipeInstructions бывает: строкой, массивом строк, массивом HowToStep,
+// или массивом HowToSection с вложенными шагами
+function extractInstructions(instr) {
+  if (!instr) return [];
+  if (typeof instr === 'string') {
+    return instr.split(/\r?\n+/).map(cleanText).filter(Boolean);
+  }
+  if (Array.isArray(instr)) {
+    const steps = [];
+    for (const item of instr) {
+      if (typeof item === 'string') {
+        const t = cleanText(item);
+        if (t) steps.push(t);
+        continue;
+      }
+      if (!item || typeof item !== 'object') continue;
+      if (item['@type'] === 'HowToSection' && Array.isArray(item.itemListElement)) {
+        steps.push(...extractInstructions(item.itemListElement));
+      } else if (item.text) {
+        const t = cleanText(item.text);
+        if (t) steps.push(t);
+      } else if (item.name) {
+        const t = cleanText(item.name);
+        if (t) steps.push(t);
+      }
+    }
+    return steps;
+  }
+  return [];
+}
+
+function extractImage(img) {
+  if (!img) return null;
+  if (typeof img === 'string') return img;
+  if (Array.isArray(img)) return extractImage(img[0]);
+  if (typeof img === 'object') return img.url || null;
+  return null;
+}
+
+// ISO 8601 duration ("PT1H20M") → минуты
+function durationToMinutes(iso) {
+  if (!iso || typeof iso !== 'string') return null;
+  const m = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/i);
+  if (!m) return null;
+  const days  = parseInt(m[1] || 0, 10);
+  const hours = parseInt(m[2] || 0, 10);
+  const mins  = parseInt(m[3] || 0, 10);
+  const total = days * 24 * 60 + hours * 60 + mins;
+  return total > 0 ? total : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ПАРСЕР ТЕКСТА РЕЦЕПТА (когда нет структурированной разметки)
 // ═══════════════════════════════════════════════════════════════════════
 
 function parseRecipeText(text, sourceUrl = '') {
