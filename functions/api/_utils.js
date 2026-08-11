@@ -76,6 +76,19 @@ export function safeParseArray(s) {
   }
 }
 
+// Сравнение строк за постоянное время — чтобы длина времени ответа
+// не давала подсказок о том, сколько символов пароля угадано верно.
+export function timingSafeEqual(a, b) {
+  const aBytes = new TextEncoder().encode(String(a ?? ''));
+  const bBytes = new TextEncoder().encode(String(b ?? ''));
+  const len = Math.max(aBytes.length, bBytes.length);
+  let diff = aBytes.length ^ bBytes.length;
+  for (let i = 0; i < len; i++) {
+    diff |= (aBytes[i] || 0) ^ (bBytes[i] || 0);
+  }
+  return diff === 0;
+}
+
 export function rowToRecipe(r) {
   return {
     ...r,
