@@ -9,6 +9,7 @@
   let steps       = [];
   let currentIdx  = 0;
   let wakeLock    = null;
+  let releaseCookingFocus = null;
 
   // ─── Таймер ──────────────────────────────────────────────
   let timerInterval = null;
@@ -168,6 +169,7 @@
     overlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     acquireWakeLock();
+    releaseCookingFocus = window.trapFocus?.(overlay, closeCookingMode);
   };
 
   function closeCookingMode() {
@@ -175,6 +177,8 @@
     overlay.classList.add('hidden');
     document.body.style.overflow = '';
     releaseWakeLock();
+    releaseCookingFocus?.();
+    releaseCookingFocus = null;
   }
 
   document.getElementById('cooking-close').addEventListener('click', closeCookingMode);
