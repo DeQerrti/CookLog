@@ -79,7 +79,7 @@
 </main>
 
 <!-- ─── Фильтр ингредиентов ─────────────────────────────── -->
-<div class="modal-overlay hidden" id="ingredients-overlay">
+<div class="modal-overlay hidden" id="ingredients-overlay" tabindex="-1">
   <div class="modal modal-ingredients" id="ingredients-modal">
     <button class="modal-close" id="ingredients-close">✕</button>
     <div class="modal-content">
@@ -96,7 +96,7 @@
 </div>
 
 <!-- ─── Модалка рецепта ─────────────────────────────────── -->
-<div class="modal-overlay hidden" id="modal-overlay">
+<div class="modal-overlay hidden" id="modal-overlay" tabindex="-1">
   <div class="modal" id="modal">
     <button class="modal-close" id="modal-close">✕</button>
     <div class="modal-content" id="modal-content"></div>
@@ -104,7 +104,7 @@
 </div>
 
 <!-- ─── Список покупок ─────────────────────────────────── -->
-<div class="modal-overlay hidden" id="shopping-overlay">
+<div class="modal-overlay hidden" id="shopping-overlay" tabindex="-1">
   <div class="modal modal-shopping">
     <button class="modal-close" id="shopping-close">✕</button>
     <div class="modal-content">
@@ -113,13 +113,17 @@
         <button class="shopping-clear-btn" id="shopping-clear-btn">Очистить всё</button>
       </div>
       <p class="shopping-hint">Добавляй рецепты через кнопку в карточке</p>
+      <div class="shopping-add-row">
+        <input type="text" id="shopping-add-input" class="search-input" placeholder="Добавить пункт вручную…" />
+        <button class="btn-primary-small" id="shopping-add-btn">+ Добавить</button>
+      </div>
       <div id="shopping-modal-body"></div>
     </div>
   </div>
 </div>
 
 <!-- ─── Режим готовки ──────────────────────────────────── -->
-<div id="cooking-overlay" class="hidden">
+<div id="cooking-overlay" class="hidden" tabindex="-1">
   <div class="cooking-header">
     <div class="cooking-title"></div>
     <button class="cooking-close" id="cooking-close">✕</button>
@@ -145,6 +149,7 @@
   <button class="pwa-banner-close" id="pwa-banner-close">✕</button>
 </div>
 
+<script src="js/a11y.js"></script>
 <script src="js/api.js"></script>
 <script src="js/recipes.js"></script>
 <script src="js/cooking.js"></script>
