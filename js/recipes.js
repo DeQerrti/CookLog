@@ -113,12 +113,23 @@ function updateIngredientsToggleLabel() {
 }
 
 const ingredientsOverlay = document.getElementById('ingredients-overlay');
-document.getElementById('ingredients-toggle').addEventListener('click', () => {
+let releaseIngredientsFocus = null;
+
+function openIngredientsOverlay() {
   renderIngredientsList(allIngredients);
   ingredientsOverlay.classList.remove('hidden');
-});
-document.getElementById('ingredients-close').addEventListener('click', () => ingredientsOverlay.classList.add('hidden'));
-ingredientsOverlay.addEventListener('click', (e) => { if (e.target === ingredientsOverlay) ingredientsOverlay.classList.add('hidden'); });
+  releaseIngredientsFocus = window.trapFocus?.(ingredientsOverlay, closeIngredientsOverlay);
+}
+
+function closeIngredientsOverlay() {
+  ingredientsOverlay.classList.add('hidden');
+  releaseIngredientsFocus?.();
+  releaseIngredientsFocus = null;
+}
+
+document.getElementById('ingredients-toggle').addEventListener('click', openIngredientsOverlay);
+document.getElementById('ingredients-close').addEventListener('click', closeIngredientsOverlay);
+ingredientsOverlay.addEventListener('click', (e) => { if (e.target === ingredientsOverlay) closeIngredientsOverlay(); });
 
 document.getElementById('ingredients-search').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
@@ -134,7 +145,7 @@ document.getElementById('ingredients-clear').addEventListener('click', () => {
 
 document.getElementById('ingredients-apply').addEventListener('click', () => {
   updateIngredientsToggleLabel();
-  ingredientsOverlay.classList.add('hidden');
+  closeIngredientsOverlay();
   applyFilters();
 });
 
