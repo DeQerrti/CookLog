@@ -37,6 +37,18 @@
     return true; // added
   };
 
+  // ─── Добавить пункт вручную (не из рецепта) ───────────────
+  const MANUAL_KEY = '_manual';
+
+  window.addManualShoppingItem = function (text) {
+    text = String(text || '').trim();
+    if (!text) return;
+    const list = loadList();
+    if (!list[MANUAL_KEY]) list[MANUAL_KEY] = { title: 'Другое', items: [] };
+    list[MANUAL_KEY].items.push({ text, checked: false });
+    saveList(list);
+  };
+
   window.isInShopping = function (recipeId) {
     return !!loadList()[String(recipeId)];
   };
@@ -123,16 +135,20 @@
 
   // ─── Открыть/закрыть модалку ─────────────────────────────
   const shoppingOverlay = document.getElementById('shopping-overlay');
+  let releaseShoppingFocus = null;
 
   window.openShoppingList = function () {
     renderShoppingModal();
     shoppingOverlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    releaseShoppingFocus = window.trapFocus?.(shoppingOverlay, closeShoppingList);
   };
 
   function closeShoppingList() {
     shoppingOverlay.classList.add('hidden');
     document.body.style.overflow = '';
+    releaseShoppingFocus?.();
+    releaseShoppingFocus = null;
   }
 
   document.getElementById('shopping-close').addEventListener('click', closeShoppingList);
@@ -143,6 +159,21 @@
     saveList({});
     renderShoppingModal();
   });
+
+  // ручное добавление пункта
+  const shoppingAddInput = document.getElementById('shopping-add-input');
+  const shoppingAddBtn   = document.getElementById('shopping-add-btn');
+
+  function submitManualItem() {
+    if (!shoppingAddInput.value.trim()) return;
+    window.addManualShoppingItem(shoppingAddInput.value);
+    shoppingAddInput.value = '';
+    renderShoppingModal();
+    shoppingAddInput.focus();
+  }
+
+  shoppingAddBtn?.addEventListener('click', submitManualItem);
+  shoppingAddInput?.addEventListener('keydown', e => { if (e.key === 'Enter') submitManualItem(); });
 
   // nav-кнопка
   document.getElementById('shopping-nav-btn').addEventListener('click', openShoppingList);
