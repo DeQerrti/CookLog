@@ -24,7 +24,7 @@
   </div>
 
   <!-- Category manager modal -->
-  <div class="cat-modal-overlay hidden" id="cat-modal">
+  <div class="cat-modal-overlay hidden" id="cat-modal" tabindex="-1">
     <div class="cat-modal-box">
       <h3 class="cat-modal-title" id="cat-modal-title">Категории</h3>
       <div class="cat-list" id="cat-list"></div>
@@ -37,12 +37,12 @@
   </div>
 
   <!-- Import modal -->
-  <div class="modal-overlay hidden" id="import-overlay">
+  <div class="modal-overlay hidden" id="import-overlay" tabindex="-1">
     <div class="modal" style="max-width:520px">
       <button class="modal-close" id="import-close">✕</button>
       <div class="modal-content">
         <h3 style="font-family:var(--font-display);font-size:1.3rem;margin-bottom:8px">🔗 Импорт рецепта</h3>
-        <p style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Вставь ссылку на рецепт и/или скопируй текст описания — он разберётся по полям автоматически</p>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Вставь ссылку — попробую сам найти рецепт на странице. Если не найду (или для соцсетей без разметки рецепта), скопируй текст описания вручную</p>
         <div class="field-group">
           <label class="field-label">Ссылка</label>
           <input type="url" class="field-input" id="import-url" placeholder="https://youtube.com/... или сайт с рецептом" />
@@ -76,6 +76,7 @@
       <div class="admin-header">
         <h1 class="admin-title">Мои рецепты</h1>
         <div class="admin-actions">
+          <button class="btn-secondary" id="export-btn">⬇️ Экспорт JSON</button>
           <button class="btn-secondary" id="import-open-btn">🔗 Импорт</button>
           <button class="btn-primary" id="new-recipe-btn">+ Новый рецепт</button>
         </div>
@@ -161,8 +162,13 @@
           <div class="admin-col">
 
             <div class="field-group">
-              <label class="field-label">Фото <span class="field-hint">— вставь URL картинки</span></label>
+              <label class="field-label">Фото <span class="field-hint">— загрузи или вставь URL</span></label>
               <input type="url" class="field-input" id="f-image" placeholder="https://…" />
+              <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+                <button type="button" class="btn-secondary btn-sm" id="photo-upload-btn">📷 Загрузить фото</button>
+                <span id="photo-upload-status" class="photo-status"></span>
+              </div>
+              <input type="file" id="photo-file-input" accept="image/*" style="display:none" />
               <div class="image-preview hidden" id="image-preview">
                 <img src="" alt="Превью" id="preview-img" />
               </div>
@@ -210,6 +216,7 @@
     </div>
   </div><!-- /admin-main -->
 
+  <script src="js/a11y.js"></script>
   <script src="js/api.js"></script>
   <script src="js/admin.js"></script>
 </body>
