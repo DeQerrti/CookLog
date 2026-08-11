@@ -1,9 +1,11 @@
-const CACHE_NAME = 'cooklog-v5';
+const CACHE_NAME = 'cooklog-v6';
 const STATIC_ASSETS = [
   '/css/style.css',
   '/css/admin.css',
   '/js/api.js',
   '/js/recipes.js',
+  '/js/cooking.js',
+  '/js/shopping.js',
   '/js/modal.js',
   '/js/admin.js',
   '/manifest.json',
