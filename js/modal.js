@@ -6,6 +6,7 @@ const overlay      = document.getElementById('modal-overlay');
 const modalContent = document.getElementById('modal-content');
 
 let currentRecipe = null;
+let releaseModalFocus = null;
 
 function openModal(r) {
   currentRecipe = r;
@@ -69,12 +70,15 @@ function openModal(r) {
 
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  releaseModalFocus = window.trapFocus?.(overlay, closeModal);
 }
 
 function closeModal() {
   overlay.classList.add('hidden');
   document.body.style.overflow = '';
   currentRecipe = null;
+  releaseModalFocus?.();
+  releaseModalFocus = null;
 }
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
