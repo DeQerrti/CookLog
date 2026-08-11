@@ -312,6 +312,13 @@ body {
   backdrop-filter: blur(4px);
 }
 
+/* Оверлей — лишь запасная цель фокуса для фокус-ловушки */
+.modal-overlay:focus,
+#cooking-overlay:focus,
+.cat-modal-overlay:focus {
+  outline: none;
+}
+
 .modal {
   background: var(--bg-modal);
   border: 1px solid var(--border);
@@ -987,6 +994,14 @@ body {
 .modal-shopping {
   max-width: 500px;
 }
+
+.shopping-add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.shopping-add-row .search-input { flex: 1; }
 
 .shopping-header-row {
   display: flex;
