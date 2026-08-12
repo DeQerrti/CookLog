@@ -25,7 +25,8 @@ export async function onRequestPost({ request, env }) {
 
   let fetchNote     = null;
   let jsonLdRecipe  = null;
-  let fetchedText   = '';
+  let metaText      = '';
+  let bodyText      = '';
 
   if (url) {
     const page = await fetchPageData(url);
@@ -33,7 +34,8 @@ export async function onRequestPost({ request, env }) {
       fetchNote = page.error;
     } else {
       jsonLdRecipe = findRecipeJsonLd(page.jsonLdBlocks);
-      fetchedText  = page.meta.description || page.meta.ogDescription || '';
+      metaText     = page.meta.description || page.meta.ogDescription || '';
+      bodyText     = page.bodyText || '';
     }
   }
 
@@ -51,15 +53,35 @@ export async function onRequestPost({ request, env }) {
       if (!recipe.time_minutes) recipe.time_minutes = fallback.time_minutes;
     }
   } else {
-    const combinedText = [text, fetchedText].filter(Boolean).join('\n\n');
-    if (!combinedText) {
+    // Приоритет источников: то, что человек вставил сам > короткое
+    // meta-описание. Полный текст страницы пробуем в последнюю очередь и
+    // только если по нему реально нашлись ингредиенты/шаги — на многих
+    // сайтах там будет в основном шум (меню, реклама, другие рецепты).
+    const primaryText = [text, metaText].filter(Boolean).join('\n\n');
+    let parsed = primaryText ? parseRecipeText(primaryText, url) : null;
+    let usedBodyFallback = false;
+
+    if ((!parsed || (!parsed.ingredients.length && !parsed.steps.length)) && bodyText) {
+      const bodyParsed = parseRecipeText([text, bodyText].filter(Boolean).join('\n\n'), url);
+      if (bodyParsed.ingredients.length || bodyParsed.steps.length) {
+        parsed = bodyParsed;
+        usedBodyFallback = true;
+      }
+    }
+
+    if (!parsed || (!parsed.ingredients.length && !parsed.steps.length && !text)) {
       return jsonResponse({
         error: fetchNote
           ? `${fetchNote}. Вставь текст рецепта вручную.`
           : 'Не нашёл рецепт по ссылке (нет разметки и описания) — вставь текст вручную.',
       }, 422);
     }
-    recipe = parseRecipeText(combinedText, url);
+
+    recipe = parsed;
+    if (usedBodyFallback) {
+      fetchNote = (fetchNote ? fetchNote + '. ' : '')
+        + 'Разобрано из текста страницы (нет разметки рецепта) — для таких сайтов автоимпорт менее точен, проверь внимательно';
+    }
   }
 
   return jsonResponse({ recipe, fetch_note: fetchNote });
@@ -98,6 +120,11 @@ async function fetchPageData(url) {
   const jsonLdBlocks = [];
   const meta = {};
 
+  // Общее состояние для сбора текста страницы (используется как резервный
+  // источник, когда нет ни JSON-LD, ни полезного meta-описания — многие
+  // старые/простые сайты кладут реальный рецепт прямо в текст страницы).
+  const bodyState = { depth: 0, buf: '' };
+
   class JsonLdCollector {
     constructor() { this.buf = ''; }
     text(chunk) {
@@ -119,19 +146,56 @@ async function fetchPageData(url) {
     }
   }
 
+  // Помечаем "мусорные" зоны (меню, шапка, подвал, скрипты и т.д.) —
+  // текст внутри них не попадает в bodyState.buf, пока глубина > 0.
+  class ExcludeTracker {
+    element(el) {
+      bodyState.depth++;
+      el.onEndTag(() => { bodyState.depth = Math.max(0, bodyState.depth - 1); });
+    }
+  }
+
+  // На границах блочных элементов вставляем перевод строки, чтобы текст
+  // страницы превратился в набор строк (как если бы человек скопировал его
+  // сам) — это критично для эвристик parseRecipeText ниже.
+  class BlockBreaker {
+    element(el) {
+      if (bodyState.depth === 0) bodyState.buf += '\n';
+      el.onEndTag(() => { if (bodyState.depth === 0) bodyState.buf += '\n'; });
+    }
+  }
+
+  class BodyTextCollector {
+    text(chunk) {
+      if (bodyState.depth === 0) bodyState.buf += chunk.text;
+    }
+  }
+
   try {
     // Прогоняем поток страницы через HTMLRewriter — .text() в конце
     // заставляет его реально дойти до конца и вызвать обработчики выше
     await new HTMLRewriter()
       .on('script[type="application/ld+json"]', new JsonLdCollector())
       .on('meta', new MetaCollector())
+      .on('nav, header, footer, aside, script, style, noscript, form, svg, button, select, iframe', new ExcludeTracker())
+      .on('p, li, br, div, h1, h2, h3, h4, h5, h6, tr, dd, dt', new BlockBreaker())
+      .on('body', new BodyTextCollector())
       .transform(resp)
       .text();
   } catch {
     return { error: 'Не удалось разобрать страницу' };
   }
 
-  return { jsonLdBlocks, meta };
+  const bodyText = bodyState.buf
+    .replace(/\r/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .slice(0, 400) // ограничиваем объём — не разбираем гигантские страницы целиком
+    .join('\n');
+
+  return { jsonLdBlocks, meta, bodyText };
 }
 
 // ─── Ищем объект Recipe в JSON-LD блоках ─────────────────────────────
