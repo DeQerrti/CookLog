@@ -2,7 +2,12 @@
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════════════
 
-const EMOJIS = ['🍳','🥗','🍜','🥩','🍲','🥣','🍕','🥚','🥞','🍱','🥘','🍛','🍝','🥙','🌮','🫕','🍣','🫔','🍞','🧆'];
+const EMOJIS = [
+  '🍳','🥗','🍜','🥩','🍲','🥣','🍕','🥚','🥞','🍱','🥘','🍛','🍝','🥙','🌮','🫕','🍣','🫔','🍞','🧆',
+  '🍔','🌯','🥪','🍟','🌭','🥟','🍤','🦐','🍗','🍖','🥓','🧀','🥖','🥯','🧇','🍦','🍩','🍪','🎂','🍰',
+  '🧁','🍮','🍫','🍭','🍬','🥧','🍨','🍇','🍓','🍉','🍎','🍌','🥑','🥕','🌽','🥦','🥔','🧅','🧄','🌶️',
+  '🍅','🥒','🥬','🫑','🍄','🥥','🍋','🍊','🍑','🍒','🥝','🍍','🥭','🍶','🍵','☕','🥤','🧃','🍷','🍺',
+];
 
 const DEFAULT_TYPES   = ['Суп', 'Второе', 'Завтрак', 'Десерт', 'Перекус', 'Салат', 'Напиток'];
 const DEFAULT_METHODS = ['Жарка', 'Варка', 'Запекание', 'Тушение', 'Без готовки', 'Гриль', 'Пар'];
@@ -14,6 +19,11 @@ let allRecipes  = [];
 let editingId   = null;       // null = new recipe, string = existing id
 let currentTags = [];
 let catGroup    = 'type';     // which group is open in cat modal
+
+// Функцию загрузки/вставки фото убрали из интерфейса, но у части старых
+// рецептов image_url в базе всё ещё может быть — просто бережно проносим
+// его через сохранение формы, не показывая и не давая менять в UI.
+let currentImageUrl = null;
 
 // ═══════════════════════════════════════════════════════════════════════
 //  LOCAL STORAGE helpers for categories
@@ -70,25 +80,6 @@ async function showAdmin() {
   await loadRecipes();
   renderSavedTags();
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-//  ЭКСПОРТ БЭКАПА
-// ═══════════════════════════════════════════════════════════════════════
-document.getElementById('export-btn').addEventListener('click', () => {
-  if (!allRecipes.length) { showStatus('Рецептов пока нет — нечего экспортировать', 'error'); return; }
-
-  const blob = new Blob([JSON.stringify(allRecipes, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const date = new Date().toISOString().slice(0, 10);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `cooklog-backup-${date}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
 
 // ═══════════════════════════════════════════════════════════════════════
 //  LOAD ALL RECIPES
@@ -155,6 +146,7 @@ function renderAdminGrid() {
 // ═══════════════════════════════════════════════════════════════════════
 document.getElementById('new-recipe-btn').addEventListener('click', () => {
   editingId = null;
+  currentImageUrl = null;
   clearForm();
   document.getElementById('form-title').textContent = 'Новый рецепт';
   document.getElementById('delete-btn').style.display = 'none';
@@ -172,7 +164,7 @@ function openEdit(r) {
   document.getElementById('f-time').value         = r.time_minutes || '';
   document.getElementById('f-source-label').value = r.source_label || '';
   document.getElementById('f-source-url').value   = r.source_url   || '';
-  document.getElementById('f-image').value        = r.image_url    || '';
+  currentImageUrl                                 = r.image_url    || null;
   document.getElementById('f-emoji').value        = r.emoji        || '';
   document.getElementById('f-ingredients').value  = (r.ingredients || []).join('\n');
   document.getElementById('f-steps').value        = (r.steps || []).join('\n');
@@ -188,9 +180,6 @@ function openEdit(r) {
   autoTags = [];  // при редактировании авто-теги пересчитаем заново при blur
   renderTagChips();
   updatePreview();
-
-  // trigger image preview
-  triggerImagePreview(r.image_url || '');
 
   // clear auto-parse hint
   document.getElementById('parsed-tags-preview').innerHTML = '';
@@ -221,7 +210,7 @@ async function saveRecipe() {
 
   const recipe = {
     title,
-    image_url:    document.getElementById('f-image').value.trim()        || null,
+    image_url:    currentImageUrl,
     type:         document.getElementById('f-type').value                || null,
     method:       document.getElementById('f-method').value              || null,
     time_minutes: timeVal ? parseInt(timeVal) : null,
@@ -279,7 +268,7 @@ async function deleteRecipe(id, fromForm = false) {
 // ═══════════════════════════════════════════════════════════════════════
 document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
 document.getElementById('clear-btn').addEventListener('click', () => {
-  if (confirm('Очистить форму?')) clearForm();
+  if (confirm('Очистить форму?')) { currentImageUrl = null; clearForm(); }
 });
 
 function cancelEdit() {
@@ -289,14 +278,13 @@ function cancelEdit() {
 }
 
 function clearForm() {
-  ['f-title','f-image','f-emoji','f-time','f-source-label','f-source-url'].forEach(id => {
+  ['f-title','f-emoji','f-time','f-source-label','f-source-url'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-ingredients').value = '';
   document.getElementById('f-steps').value       = '';
   document.getElementById('f-type').value        = '';
   document.getElementById('f-method').value      = '';
-  document.getElementById('image-preview').classList.add('hidden');
   document.getElementById('parsed-tags-preview').innerHTML = '';
   currentTags = [];
   autoTags = [];
@@ -522,27 +510,9 @@ function buildEmojiSuggestions() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  IMAGE PREVIEW
-// ═══════════════════════════════════════════════════════════════════════
-document.getElementById('f-image').addEventListener('input', e => triggerImagePreview(e.target.value));
-
-function triggerImagePreview(url) {
-  const wrap = document.getElementById('image-preview');
-  const img  = document.getElementById('preview-img');
-  if (url) {
-    img.src = url;
-    img.onload  = () => wrap.classList.remove('hidden');
-    img.onerror = () => wrap.classList.add('hidden');
-  } else {
-    wrap.classList.add('hidden');
-  }
-  updatePreview();
-}
-
-// ═══════════════════════════════════════════════════════════════════════
 //  LIVE PREVIEW
 // ═══════════════════════════════════════════════════════════════════════
-['f-title','f-type','f-method','f-time','f-emoji','f-image'].forEach(id => {
+['f-title','f-type','f-method','f-time','f-emoji'].forEach(id => {
   document.getElementById(id)?.addEventListener('input', updatePreview);
   document.getElementById(id)?.addEventListener('change', updatePreview);
 });
@@ -553,7 +523,6 @@ function updatePreview() {
   const method = document.getElementById('f-method').value;
   const time   = document.getElementById('f-time').value;
   const emoji  = document.getElementById('f-emoji').value  || '🍽️';
-  const image  = document.getElementById('f-image').value;
 
   document.getElementById('preview-title').textContent = title;
 
@@ -567,16 +536,10 @@ function updatePreview() {
   tagsEl.innerHTML = currentTags.slice(0, 5).map(t => `<span class="tag">${t}</span>`).join('');
 
   const placeholder = document.getElementById('preview-placeholder');
-  const imgCard     = document.getElementById('preview-img-card');
-  if (image) {
-    imgCard.src = image;
-    imgCard.onload  = () => { imgCard.classList.remove('hidden'); placeholder.style.display = 'none'; };
-    imgCard.onerror = () => { imgCard.classList.add('hidden'); placeholder.style.display = ''; placeholder.textContent = emoji; };
-  } else {
-    imgCard.classList.add('hidden');
-    placeholder.style.display = '';
-    placeholder.textContent = emoji;
-  }
+  const imgCard      = document.getElementById('preview-img-card');
+  imgCard.classList.add('hidden');
+  placeholder.style.display = '';
+  placeholder.textContent = emoji;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -597,163 +560,3 @@ function showStatus(msg, type) {
 //  INIT PREVIEW
 // ═══════════════════════════════════════════════════════════════════════
 updatePreview();
-
-// ═══════════════════════════════════════════════════════════════════════
-//  ИМПОРТ РЕЦЕПТА ПО ССЫЛКЕ / ТЕКСТУ
-// ═══════════════════════════════════════════════════════════════════════
-
-const importOverlay = document.getElementById('import-overlay');
-const importBtn     = document.getElementById('import-open-btn');
-const importClose   = document.getElementById('import-close');
-let releaseImportFocus = null;
-
-function closeImportOverlay() {
-  importOverlay.classList.add('hidden');
-  releaseImportFocus?.();
-  releaseImportFocus = null;
-}
-
-if (importBtn) {
-  importBtn.addEventListener('click', () => {
-    importOverlay.classList.remove('hidden');
-    releaseImportFocus = window.trapFocus?.(importOverlay, closeImportOverlay);
-  });
-}
-
-if (importClose) {
-  importClose.addEventListener('click', closeImportOverlay);
-}
-
-if (importOverlay) {
-  importOverlay.addEventListener('click', e => {
-    if (e.target === importOverlay) closeImportOverlay();
-  });
-}
-
-const importSubmitBtn = document.getElementById('import-submit-btn');
-if (importSubmitBtn) {
-  importSubmitBtn.addEventListener('click', async () => {
-    const url  = (document.getElementById('import-url')?.value  || '').trim();
-    const text = (document.getElementById('import-text')?.value || '').trim();
-
-    if (!url && !text) {
-      alert('Вставь ссылку или текст рецепта');
-      return;
-    }
-
-    importSubmitBtn.disabled = true;
-    importSubmitBtn.textContent = '⏳ Разбираю…';
-
-    const { data, error } = await api.recipes.import({ url, text });
-
-    importSubmitBtn.disabled = false;
-    importSubmitBtn.textContent = 'Разобрать рецепт';
-
-    if (error || !data?.recipe) {
-      alert('Ошибка: ' + (error || 'нет данных'));
-      return;
-    }
-
-    // Закрываем модалку импорта, заполняем форму
-    closeImportOverlay();
-
-    const r = data.recipe;
-    editingId = null;
-
-    document.getElementById('f-title').value        = r.title         || '';
-    document.getElementById('f-time').value         = r.time_minutes  || '';
-    document.getElementById('f-source-label').value = r.source_label  || '';
-    document.getElementById('f-source-url').value   = r.source_url    || url || '';
-    document.getElementById('f-image').value        = r.image_url     || '';
-    document.getElementById('f-emoji').value        = r.emoji         || '';
-    document.getElementById('f-ingredients').value  = (r.ingredients  || []).join('\n');
-    document.getElementById('f-steps').value        = (r.steps        || []).join('\n');
-
-    populateCategorySelects();
-    setTimeout(() => {
-      document.getElementById('f-type').value   = r.type   || '';
-      document.getElementById('f-method').value = r.method || '';
-    }, 0);
-
-    currentTags = [...(r.tags || [])];
-    autoTags = [];
-    renderTagChips();
-    updatePreview();
-    triggerImagePreview(r.image_url || '');
-
-    document.getElementById('form-title').textContent       = 'Импортированный рецепт — проверь и сохрани';
-    document.getElementById('delete-btn').style.display     = 'none';
-    document.getElementById('header-mode-label').textContent = r.title;
-    showFormSection();
-
-    showStatus(
-      data.fetch_note
-        ? `✓ Рецепт разобран (${data.fetch_note.toLowerCase()}) — проверь данные`
-        : '✓ Рецепт разобран — проверь данные и сохрани',
-      'success'
-    );
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  ЗАГРУЗКА ФОТО ЧЕРЕЗ GITHUB API
-// ═══════════════════════════════════════════════════════════════════════
-
-const photoInput  = document.getElementById('photo-file-input');
-const photoBtn    = document.getElementById('photo-upload-btn');
-const photoStatus = document.getElementById('photo-upload-status');
-
-if (photoBtn && photoInput) {
-  photoBtn.addEventListener('click', () => photoInput.click());
-
-  photoInput.addEventListener('change', async () => {
-    const file = photoInput.files[0];
-    if (!file) return;
-
-    // Сжимаем на клиенте через Canvas перед отправкой
-    const compressed = await compressImage(file, 1600, 0.82);
-
-    photoBtn.disabled = true;
-    photoBtn.textContent = '⏳ Загружаем…';
-    if (photoStatus) photoStatus.textContent = '';
-
-    const { data, error } = await api.uploadImage(compressed);
-
-    photoBtn.disabled = false;
-    photoBtn.textContent = '📷 Загрузить фото';
-    photoInput.value = '';
-
-    if (error) {
-      if (photoStatus) { photoStatus.textContent = '✗ ' + error; photoStatus.className = 'photo-status error'; }
-      return;
-    }
-
-    // Подставляем URL в поле формы
-    document.getElementById('f-image').value = data.url;
-    triggerImagePreview(data.url);
-    if (photoStatus) { photoStatus.textContent = '✓ Фото загружено'; photoStatus.className = 'photo-status success'; }
-    showStatus('✓ Фото загружено в репозиторий', 'success');
-  });
-}
-
-// Сжатие через Canvas (работает в браузере)
-async function compressImage(file, maxSize = 1600, quality = 0.82) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxSize || height > maxSize) {
-        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
-        else                { width  = Math.round(width  * maxSize / height); height = maxSize; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(blob => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-}
