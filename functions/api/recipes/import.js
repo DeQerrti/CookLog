@@ -378,6 +378,16 @@ function parseRecipeText(text, sourceUrl = '') {
   };
 }
 
+// ─── Похоже ли на строку ингредиента ────────────────────────────────
+// Два частых формата на русскоязычных сайтах:
+//   "200 г муки"           — количество в начале
+//   "Батон - 6-8 ломтиков" — сначала название, потом количество через тире
+function looksLikeIngredientLine(line) {
+  const qtyFirst = /^\d/.test(line) && /\d\s*(г|гр|кг|мл|л|ст|стакан|шт|зуб|щепот|пучок|ч\.?л|ст\.?л)/i.test(line);
+  const nameFirst = /\s[-—]\s*[^-—]*\d/.test(line) && line.length < 70 && !/^\d+[\.\)]\s+\S/.test(line);
+  return qtyFirst || nameFirst;
+}
+
 // ─── Находим заголовок ──────────────────────────────────────────────
 function findTitle(lines) {
   const skipPatterns = [
@@ -388,10 +398,8 @@ function findTitle(lines) {
   for (const line of lines) {
     if (line.length < 3 || line.length > 120) continue;
     if (skipPatterns.some(p => p.test(line))) continue;
-    // если строка не выглядит как ингредиент (нет цифры в начале + единицы)
-    if (!/^\d/.test(line) || !/\d\s*(г|мл|кг|л|шт|ст\.?л|ч\.?л)/i.test(line)) {
-      return capitalize(line.replace(/^#+\s*/, '').replace(/[*_]/g, ''));
-    }
+    if (looksLikeIngredientLine(line)) continue;
+    return capitalize(line.replace(/^#+\s*/, '').replace(/[*_]/g, ''));
   }
   return 'Рецепт';
 }
@@ -416,7 +424,7 @@ function splitSections(lines) {
     // Автодетект по виду строки
     const isNumberedStep  = /^\d+[\.\)]\s+\S/.test(line) && line.length > 15;
     const isBullet        = /^[-—•*]\s+/.test(line);
-    const looksIngredient = /^\d/.test(line) && /\d\s*(г|гр|кг|мл|л|ст|стакан|шт|зуб|щепот|пучок|ч\.?л|ст\.?л)/i.test(line);
+    const looksIngredient = looksLikeIngredientLine(line);
 
     if (isNumberedStep)   numberedCount++;
     if (isBullet)         bulletCount++;
