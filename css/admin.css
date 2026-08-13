@@ -183,18 +183,37 @@
 
 .field-emoji { font-size: 20px; text-align: center; width: 60px; }
 
-.emoji-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji-suggestions {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.emoji-suggestions::-webkit-scrollbar { width: 6px; }
+.emoji-suggestions::-webkit-scrollbar-track { background: transparent; }
+.emoji-suggestions::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .emoji-opt {
-  font-size: 22px;
+  font-size: 20px;
   cursor: pointer;
-  padding: 4px;
+  padding: 5px 0;
   border-radius: 6px;
   transition: background .15s;
   line-height: 1;
+  text-align: center;
 }
 
-.emoji-opt:hover { background: var(--bg-chip); }
+.emoji-opt:hover { background: var(--bg-card); }
+
+@media (max-width: 480px) {
+  .emoji-suggestions { grid-template-columns: repeat(6, 1fr); }
+}
 
 /* ─── Превью карточки ────────────────────────────────── */
 .card-preview {
