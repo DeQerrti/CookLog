@@ -1,4 +1,4 @@
-import { jsonResponse, verifyAuth, rowToRecipe } from '../_utils.js';
+import { jsonResponse, verifyAuth, rowToRecipe, sanitizeUrl } from '../_utils.js';
 
 // GET /api/recipes — публичный список всех рецептов
 export async function onRequestGet({ env }) {
@@ -30,7 +30,7 @@ export async function onRequestPost({ request, env }) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     title,
-    body.image_url || null,
+    sanitizeUrl(body.image_url),
     body.type || null,
     body.method || null,
     body.time_minutes ?? null,
@@ -38,7 +38,7 @@ export async function onRequestPost({ request, env }) {
     JSON.stringify(body.steps || []),
     JSON.stringify(body.tags || []),
     body.source_label || null,
-    body.source_url || null,
+    sanitizeUrl(body.source_url),
     body.emoji || null
   ).run();
 

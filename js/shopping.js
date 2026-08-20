@@ -80,17 +80,17 @@
     body.innerHTML = keys.map(id => {
       const section = list[id];
       const itemsHtml = section.items.map((item, idx) => `
-        <div class="shopping-item ${item.checked ? 'checked' : ''}" data-recipe="${id}" data-idx="${idx}">
+        <div class="shopping-item ${item.checked ? 'checked' : ''}" data-recipe="${escapeHtml(id)}" data-idx="${idx}">
           <input type="checkbox" ${item.checked ? 'checked' : ''} />
-          <span>${item.text}</span>
-          <button class="shopping-item-del" data-recipe="${id}" data-idx="${idx}" title="Удалить">✕</button>
+          <span>${escapeHtml(item.text)}</span>
+          <button class="shopping-item-del" data-recipe="${escapeHtml(id)}" data-idx="${idx}" title="Удалить">✕</button>
         </div>`).join('');
 
       return `
-        <div class="shopping-recipe-section" data-recipe="${id}">
+        <div class="shopping-recipe-section" data-recipe="${escapeHtml(id)}">
           <div class="shopping-recipe-name">
-            ${section.title}
-            <button class="shopping-remove-recipe" data-recipe="${id}">Удалить раздел</button>
+            ${escapeHtml(section.title)}
+            <button class="shopping-remove-recipe" data-recipe="${escapeHtml(id)}">Удалить раздел</button>
           </div>
           ${itemsHtml}
         </div>`;
