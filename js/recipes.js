@@ -91,8 +91,8 @@ function renderIngredientsList(list) {
   }
   el.innerHTML = list.map(([name]) => `
     <label class="ingredient-row">
-      <input type="checkbox" value="${name}" ${filters.ingredients.has(name) ? 'checked' : ''} />
-      <span>${name}</span>
+      <input type="checkbox" value="${escapeHtml(name)}" ${filters.ingredients.has(name) ? 'checked' : ''} />
+      <span>${escapeHtml(name)}</span>
     </label>
   `).join('');
 
@@ -195,9 +195,10 @@ function renderCards(recipes) {
     const card = document.createElement('div');
     card.className = 'recipe-card';
 
-    const imageHtml = r.image_url
-      ? `<img class="card-image" src="${r.image_url}" alt="${r.title}" loading="lazy" />`
-      : `<div class="card-image-placeholder">${r.emoji || '🍽️'}</div>`;
+    const imageUrl = safeUrl(r.image_url);
+    const imageHtml = imageUrl
+      ? `<img class="card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(r.title)}" loading="lazy" />`
+      : `<div class="card-image-placeholder">${escapeHtml(r.emoji || '🍽️')}</div>`;
 
     const typeLabel   = r.type   || r.meal   || '';
     const methodLabel = r.method || '';
@@ -206,12 +207,12 @@ function renderCards(recipes) {
       ${imageHtml}
       <div class="card-body">
         <div class="card-meta">
-          ${typeLabel   ? `<span class="badge-meal">${typeLabel}</span>`     : ''}
-          ${methodLabel ? `<span class="badge-method">${methodLabel}</span>` : ''}
-          ${r.time_minutes ? `<span class="badge-time">⏱ ${r.time_minutes} мин</span>` : ''}
+          ${typeLabel   ? `<span class="badge-meal">${escapeHtml(typeLabel)}</span>`     : ''}
+          ${methodLabel ? `<span class="badge-method">${escapeHtml(methodLabel)}</span>` : ''}
+          ${r.time_minutes ? `<span class="badge-time">⏱ ${escapeHtml(r.time_minutes)} мин</span>` : ''}
         </div>
-        <div class="card-title">${r.title}</div>
-        <div class="card-tags">${(r.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        <div class="card-title">${escapeHtml(r.title)}</div>
+        <div class="card-tags">${(r.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>`;
 
     card.addEventListener('click', () => openModal(r));

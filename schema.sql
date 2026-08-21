@@ -15,3 +15,11 @@ CREATE TABLE IF NOT EXISTS recipes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_recipes_created_at ON recipes(created_at);
+
+-- Счётчик неудачных попыток входа по IP — защита /api/auth/login от подбора пароля.
+CREATE TABLE IF NOT EXISTS login_attempts (
+  ip                TEXT PRIMARY KEY,
+  attempts          INTEGER NOT NULL DEFAULT 0,
+  first_attempt_at  INTEGER NOT NULL,
+  locked_until      INTEGER
+);

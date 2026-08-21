@@ -1,4 +1,4 @@
-import { jsonResponse, verifyAuth } from '../_utils.js';
+import { jsonResponse, verifyAuth, sanitizeUrl } from '../_utils.js';
 
 // PUT /api/recipes/:id — обновить рецепт (только для авторизованного админа)
 export async function onRequestPut({ request, env, params }) {
@@ -22,7 +22,7 @@ export async function onRequestPut({ request, env, params }) {
      WHERE id = ?`
   ).bind(
     title,
-    body.image_url || null,
+    sanitizeUrl(body.image_url),
     body.type || null,
     body.method || null,
     body.time_minutes ?? null,
@@ -30,7 +30,7 @@ export async function onRequestPut({ request, env, params }) {
     JSON.stringify(body.steps || []),
     JSON.stringify(body.tags || []),
     body.source_label || null,
-    body.source_url || null,
+    sanitizeUrl(body.source_url),
     body.emoji || null,
     params.id
   ).run();

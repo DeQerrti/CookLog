@@ -89,6 +89,18 @@ export function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
+// Разрешаем сохранять только http(s)-ссылки (или пусто) — иначе на клиенте
+// значение может попасть в href/src и выполниться как javascript:/data:.
+export function sanitizeUrl(u) {
+  if (!u) return null;
+  try {
+    const parsed = new URL(String(u));
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export function rowToRecipe(r) {
   return {
     ...r,

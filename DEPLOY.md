@@ -36,7 +36,12 @@ database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 wrangler d1 execute cooklog-db --remote --file=./schema.sql
 ```
 
-Это создаст таблицу `recipes` в твоей новой базе.
+Это создаст таблицы `recipes` и `login_attempts` в твоей новой базе.
+
+> Если база уже была создана раньше (до появления `login_attempts`), просто выполни эту же команду ещё раз — `CREATE TABLE IF NOT EXISTS` безопасно доберёт новую таблицу, ничего не потеряется:
+> ```bash
+> wrangler d1 execute cooklog-db --remote --file=./schema.sql
+> ```
 
 ## 3. Создать `wrangler.toml` в корне репозитория
 

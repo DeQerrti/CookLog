@@ -122,9 +122,10 @@ function renderAdminGrid() {
     const card = document.createElement('div');
     card.className = 'recipe-card admin-card';
 
-    const imageHtml = r.image_url
-      ? `<img class="card-image" src="${r.image_url}" alt="${r.title}" loading="lazy" />`
-      : `<div class="card-image-placeholder">${r.emoji || '🍽️'}</div>`;
+    const imageUrl = safeUrl(r.image_url);
+    const imageHtml = imageUrl
+      ? `<img class="card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(r.title)}" loading="lazy" />`
+      : `<div class="card-image-placeholder">${escapeHtml(r.emoji || '🍽️')}</div>`;
 
     const typeLabel   = r.type   || r.meal   || '';
     const methodLabel = r.method || '';
@@ -133,15 +134,15 @@ function renderAdminGrid() {
       ${imageHtml}
       <div class="card-body">
         <div class="card-meta">
-          ${typeLabel   ? `<span class="badge-meal">${typeLabel}</span>` : ''}
-          ${methodLabel ? `<span class="badge-method">${methodLabel}</span>` : ''}
-          ${r.time_minutes ? `<span class="badge-time">⏱ ${r.time_minutes} мин</span>` : ''}
+          ${typeLabel   ? `<span class="badge-meal">${escapeHtml(typeLabel)}</span>` : ''}
+          ${methodLabel ? `<span class="badge-method">${escapeHtml(methodLabel)}</span>` : ''}
+          ${r.time_minutes ? `<span class="badge-time">⏱ ${escapeHtml(r.time_minutes)} мин</span>` : ''}
         </div>
-        <div class="card-title">${r.title}</div>
-        <div class="card-tags">${(r.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        <div class="card-title">${escapeHtml(r.title)}</div>
+        <div class="card-tags">${(r.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
         <div class="admin-card-actions">
-          <button class="btn-edit" data-id="${r.id}">✏️ Редактировать</button>
-          <button class="btn-del"  data-id="${r.id}">🗑</button>
+          <button class="btn-edit" data-id="${escapeHtml(r.id)}">✏️ Редактировать</button>
+          <button class="btn-del"  data-id="${escapeHtml(r.id)}">🗑</button>
         </div>
       </div>`;
 
@@ -359,11 +360,11 @@ function renderCatList() {
   items.forEach(name => {
     const div = document.createElement('div');
     div.className = 'cat-item';
-    const safeName = name.replace(/'/g, "\\'");
+    const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     div.innerHTML = `
-      <span class="cat-name">${name}</span>
+      <span class="cat-name">${escapeHtml(name)}</span>
       ${defaults.includes(name) ? '<span class="cat-badge">базовая</span>' : ''}
-      <button class="cat-del-btn" onclick="removeCategory('${safeName}')">✕</button>`;
+      <button class="cat-del-btn" onclick="removeCategory('${escapeHtml(safeName)}')">✕</button>`;
     el.appendChild(div);
   });
 }
@@ -403,8 +404,8 @@ function renderTagChips() {
   currentTags.forEach(t => {
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
-    const safe = t.replace(/'/g, "\\'");
-    chip.innerHTML = `${t} <button onclick="removeTag('${safe}')">✕</button>`;
+    const safe = t.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    chip.innerHTML = `${escapeHtml(t)} <button onclick="removeTag('${escapeHtml(safe)}')">✕</button>`;
     el.appendChild(chip);
   });
   updatePreview();
@@ -470,7 +471,7 @@ function updateIngredientPreview() {
 
   const preview = document.getElementById('parsed-tags-preview');
   preview.innerHTML = parsed.length
-    ? '→ авто-теги при уходе с поля: ' + parsed.map(t => `<span class="auto-tag">${t}</span>`).join(' ')
+    ? '→ авто-теги при уходе с поля: ' + parsed.map(t => `<span class="auto-tag">${escapeHtml(t)}</span>`).join(' ')
     : '';
 }
 
@@ -494,7 +495,7 @@ function onIngredientsChange() {
 
   const preview = document.getElementById('parsed-tags-preview');
   preview.innerHTML = parsed.length
-    ? '→ авто-теги: ' + parsed.map(t => `<span class="auto-tag">${t}</span>`).join(' ')
+    ? '→ авто-теги: ' + parsed.map(t => `<span class="auto-tag">${escapeHtml(t)}</span>`).join(' ')
     : '';
 
   renderTagChips();
@@ -538,12 +539,12 @@ function updatePreview() {
 
   const meta = document.getElementById('preview-meta');
   meta.innerHTML = `
-    ${type   ? `<span class="badge-meal">${type}</span>`   : ''}
-    ${method ? `<span class="badge-method">${method}</span>` : ''}
-    ${time   ? `<span class="badge-time">⏱ ${time} мин</span>` : ''}`;
+    ${type   ? `<span class="badge-meal">${escapeHtml(type)}</span>`   : ''}
+    ${method ? `<span class="badge-method">${escapeHtml(method)}</span>` : ''}
+    ${time   ? `<span class="badge-time">⏱ ${escapeHtml(time)} мин</span>` : ''}`;
 
   const tagsEl = document.getElementById('preview-tags');
-  tagsEl.innerHTML = currentTags.slice(0, 5).map(t => `<span class="tag">${t}</span>`).join('');
+  tagsEl.innerHTML = currentTags.slice(0, 5).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
 
   const placeholder = document.getElementById('preview-placeholder');
   const imgCard      = document.getElementById('preview-img-card');

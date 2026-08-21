@@ -131,7 +131,7 @@
 
     body.innerHTML = `
       <div class="cooking-step-num">${currentIdx + 1}</div>
-      <div class="cooking-step-text">${step}</div>
+      <div class="cooking-step-text">${escapeHtml(step)}</div>
       ${timerHtml}`;
 
     if (secs > 0) {
